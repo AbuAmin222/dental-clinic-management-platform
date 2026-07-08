@@ -1,0 +1,16 @@
+resources/js/
+├── Composables/
+│   ├── Auth/
+│   │   └── useRegisterForm.js
+│   ├── UI/
+│   │   └── useNotifications.js  (مثلاً لرسائل SweetAlert)
+│   └── index.js                 (يجمع كل الـ Composables)
+├── Utils/
+│   ├── Auth/
+│   │   ├── dataShapes.js        (أشكال البيانات التي صممناها)
+│   │   └── validationRules.js   (القواعد التي سنطورها الآن)
+│   └── Helpers/
+│       └── formatters.js        (تنسيق التاريخ، الأرقام، إلخ)
+├── Pages/
+│   ├── Auth/ (الجمهور)
+│   └── Receptionist/ (الموظفين)

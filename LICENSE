@@ -1,0 +1,166 @@
+MIT License
+
+Copyright (c) 2026 Dental Clinic Management System
+                    Amin Dyab — https://github.com/AminDyab
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+THIRD-PARTY COMPONENT NOTICES
+
+This software incorporates open-source components. The license text for each
+component is available in full inside the relevant package directory under
+vendor/ (PHP) or node_modules/ (JavaScript) within this repository.
+
+  ── PRODUCTION DEPENDENCIES ──────────────────────────────────────────────────
+
+  Component                         License     Source
+  ─────────────────────────────────────────────────────────────────────────────
+  Laravel Framework 12.x            MIT         https://github.com/laravel/framework
+  Laravel Jetstream 5.x             MIT         https://github.com/laravel/jetstream
+  Laravel Fortify 1.x               MIT         https://github.com/laravel/fortify
+  Laravel Sanctum 4.x               MIT         https://github.com/laravel/sanctum
+  Laravel Tinker 2.x                MIT         https://github.com/laravel/tinker
+  Inertia.js (Laravel adapter) 2.x  MIT         https://github.com/inertiajs/inertia-laravel
+  Tightenco Ziggy 2.x               MIT         https://github.com/tighten/ziggy
+  Vue.js 3.x                        MIT         https://github.com/vuejs/core
+  Inertia.js (Vue 3 adapter) 2.x    MIT         https://github.com/inertiajs/inertia
+  Tailwind CSS 3.x                  MIT         https://github.com/tailwindlabs/tailwindcss
+  @tailwindcss/forms                MIT         https://github.com/tailwindlabs/tailwindcss-forms
+  @tailwindcss/typography           MIT         https://github.com/tailwindlabs/tailwindcss-typography
+  Vite 5.x                          MIT         https://github.com/vitejs/vite
+  @vitejs/plugin-vue                MIT         https://github.com/vitejs/vite-plugin-vue
+  laravel-vite-plugin               MIT         https://github.com/laravel/vite-plugin
+  SweetAlert2 11.x                  MIT         https://github.com/sweetalert2/sweetalert2
+  Axios 1.x                         MIT         https://github.com/axios/axios
+  Carbon (nesbot/carbon)            MIT         https://github.com/briannesbitt/Carbon
+  PostCSS 8.x                       MIT         https://github.com/postcss/postcss
+  Autoprefixer                      MIT         https://github.com/postcss/autoprefixer
+  concurrently                      MIT         https://github.com/open-cli-tools/concurrently
+
+  ── DEVELOPMENT DEPENDENCIES ─────────────────────────────────────────────────
+
+  Component                         License     Source
+  ─────────────────────────────────────────────────────────────────────────────
+  Barry vd. Heuvel IDE Helper 3.x   MIT         https://github.com/barryvdh/laravel-ide-helper
+  Laravel Pail                      MIT         https://github.com/laravel/pail
+  Laravel Pint                      MIT         https://github.com/laravel/pint
+  Laravel Sail                      MIT         https://github.com/laravel/sail
+  Faker PHP                         MIT         https://github.com/FakerPHP/Faker
+  Mockery 1.x                       BSD-3-Clause https://github.com/mockery/mockery
+  NunoMaduro/Collision 8.x          MIT         https://github.com/nunomaduro/collision
+  PHPUnit 11.x                      BSD-3-Clause https://github.com/sebastianbergmann/phpunit
+
+  ── INFRASTRUCTURE ───────────────────────────────────────────────────────────
+
+  Component                         License     Source
+  ─────────────────────────────────────────────────────────────────────────────
+  PHP 8.3 (php:8.3-fpm-alpine)      PHP License https://www.php.net/license/
+  Nginx                             BSD-2-Clause https://nginx.org/LICENSE
+  Supervisor                        MIT-like    https://github.com/Supervisor/supervisor
+  MySQL 8.0 (mysql:8.0)             GPL-2.0     https://www.mysql.com/about/legal/
+  Redis 7 (redis:7-alpine)          BSD-3-Clause https://redis.io/docs/about/license/
+  Node.js 20 (node:20-alpine)       MIT         https://github.com/nodejs/node/blob/main/LICENSE
+  Composer 2.7                      MIT         https://github.com/composer/composer
+  mlocati/docker-php-ext-installer  MIT         https://github.com/mlocati/docker-php-extension-installer
+
+  ── CI/CD ────────────────────────────────────────────────────────────────────
+
+  Component                         License     Source
+  ─────────────────────────────────────────────────────────────────────────────
+  actions/checkout@v4               MIT         https://github.com/actions/checkout
+  shivammathur/setup-php@v2         MIT         https://github.com/shivammathur/setup-php
+  actions/setup-node@v4             MIT         https://github.com/actions/setup-node
+  actions/cache@v4                  MIT         https://github.com/actions/cache
+  docker/setup-buildx-action@v3     Apache-2.0  https://github.com/docker/setup-buildx-action
+  docker/login-action@v3            Apache-2.0  https://github.com/docker/login-action
+  docker/build-push-action@v5       Apache-2.0  https://github.com/docker/build-push-action
+
+  Note: MySQL is distributed under GPL-2.0. When used as a standalone service
+  (as in the Docker Compose configuration herein), its license does not extend
+  to application code. See https://www.mysql.com/about/legal/licensing/oem/ for
+  the MySQL FOSS exception applicable to open-source software.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DISCLAIMER — MEDICAL ADMINISTRATIVE SOFTWARE
+
+This software is provided for administrative and record-keeping purposes within
+a dental clinic context only.
+
+  1. NOT A MEDICAL DEVICE
+     This software is not a certified medical device and has not been evaluated
+     or approved by any medical regulatory body. It does not provide clinical
+     diagnoses, treatment recommendations, drug prescriptions, or medical advice
+     of any kind. X-ray images stored in the system are administrative records
+     only; their clinical interpretation is the sole responsibility of licensed
+     medical professionals.
+
+  2. REGULATORY COMPLIANCE
+     Operators are solely responsible for compliance with all applicable laws
+     and regulations in their jurisdiction, including but not limited to:
+     — Palestinian Personal Data Protection Law and related regulations
+     — Palestinian Monetary Authority (PMA) regulations for electronic payment
+       acceptance and merchant licensing
+     — PCI-DSS standards if processing real cardholder data
+     — Any applicable international standards (HIPAA, GDPR) where the operator
+       has obligations under those frameworks
+     — Palestinian medical records retention and destruction requirements
+
+  3. PAYMENT GATEWAY DISCLAIMER
+     The four payment gateways included (Bank of Palestine, Jawwal Pay, PalPay,
+     PayPal) are implemented as sandbox simulators for development and
+     demonstration purposes. Processing real patient payments requires:
+     (a) Obtaining live credentials from each gateway provider
+     (b) Completing the provider's merchant onboarding and compliance review
+     (c) Implementing real webhook signature verification in the callback route
+     (d) PCI-DSS compliance assessment appropriate to the integration scope
+     The authors make no warranty that the current integration patterns meet
+     any gateway provider's production requirements.
+
+  4. CURRENCY CONVERSION
+     The ILS-to-USD exchange rate used for PayPal transactions is a static,
+     manually configured value. The authors make no warranty as to its accuracy
+     and accept no liability for financial discrepancies arising from rate drift.
+     Operators must implement live FX rate retrieval before accepting real PayPal
+     payments from patients.
+
+  5. DATA SECURITY
+     Operators are responsible for securing their deployment environment,
+     including: HTTPS enforcement, firewall rules, database access controls,
+     secret rotation, backup and disaster recovery, and log management.
+     Sensitive patient files (national ID scans, X-ray images) are stored on
+     a non-web-accessible disk by default; operators must not alter this
+     configuration in a way that exposes these files publicly.
+
+  6. NO WARRANTY ON CLINICAL DATA INTEGRITY
+     The system stores what medical professionals enter. It does not validate
+     the clinical accuracy, completeness, or appropriateness of diagnoses,
+     treatment notes, tooth numbers, condition types, or any other clinical
+     record entered by users.
+
+THE AUTHORS AND COPYRIGHT HOLDERS EXPRESSLY DISCLAIM ALL LIABILITY FOR ANY
+HARM, LOSS, OR DAMAGE — INCLUDING BUT NOT LIMITED TO FINANCIAL LOSS, DATA
+BREACH, CLINICAL HARM, REGULATORY PENALTY, OR PATIENT HARM — ARISING FROM THE
+DEPLOYMENT, CONFIGURATION, USE, OR MISUSE OF THIS SOFTWARE IN ANY CLINICAL OR
+FINANCIAL SETTING, WHETHER OR NOT THE AUTHORS HAVE BEEN ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
