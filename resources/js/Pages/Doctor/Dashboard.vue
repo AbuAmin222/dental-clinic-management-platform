@@ -2,7 +2,6 @@
 import { Head, Link } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 
-// استقبال البيانات القادمة من الـ DashboardController
 defineProps({
   appointments: Array,
   today: String,

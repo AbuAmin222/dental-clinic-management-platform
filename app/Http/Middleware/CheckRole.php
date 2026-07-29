@@ -1,28 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Facades\Auth;
 
 class CheckRole
 {
     /**
      * Handle an incoming request.
      *
+     * Supports dynamic multi-role authorization using variadic parameters.
+     * Usage in Routes: ->middleware('role:doctor,receptionist')
+     *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @param  string  $role
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  string  ...$roles
      * @return \Symfony\Component\HttpFoundation\Response
      */
-    public function handle(Request $request, Closure $next, ?string $role = null): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if (Auth::check() && $role && Auth::user()->role === $role) {
+        $user = $request->user();
+
+        if ($user && in_array($user->role, $roles, true)) {
             return $next($request);
         }
 
-        return redirect()->route('dashboard')->with('error', 'Unauthorized, Canno`t have permission to access this page.');
+        return redirect()
+            ->route('dashboard')
+            ->with('error', 'Unauthorized access. You do not possess the required clinical role privileges.');
     }
 }

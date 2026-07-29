@@ -1,118 +1,108 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Patient;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
-use App\Models\Patient;
-use App\Models\Doctor;
-use App\Models\Appointment;
-use Carbon\Carbon;
+use App\Http\Requests\Receptionist\StoreAppointmentRequest;
 use App\Models\Invoice;
+use App\Models\Patient;
+use App\Services\Appointment\AppointmentService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 
+/**
+ * Class PatientController
+ *
+ * Coordinates self-service processes for verified patients, adhering strictly to SRP.
+ *
+ * @package App\Http\Controllers\Patient
+ */
 class PatientController extends Controller
 {
-    public function index()
+    protected AppointmentService $bookingService;
+
+    /**
+     * PatientController constructor.
+     *
+     * @param AppointmentService $bookingService
+     */
+    public function __construct(AppointmentService $bookingService)
+    {
+        $this->bookingService = $bookingService;
+    }
+
+    /**
+     * Map aggregated telemetry profile statistics and structural invoices ledger.
+     *
+     * @return InertiaResponse
+     */
+    public function index(): InertiaResponse
     {
         $user = Auth::user();
 
-        $patientData = Patient::where('user_id', $user->id)->with([
-            'appointments' => function ($query) {
+        $patientData = Patient::where('user_id', $user?->id)->with([
+            'appointments' => static function ($query): void {
                 $query->with(['doctor.user', 'invoices'])->latest();
             },
-            'dentalRecords' => function ($query) {
+            'dentalRecords' => static function ($query): void {
                 $query->with(['doctor.user', 'appointment'])->latest();
             },
-            'invoices' => function ($query) {
+            'invoices' => static function ($query): void {
                 $query->with(['doctor.user', 'appointment'])->latest();
             }
         ])->first();
 
         $stats = [
-            'total_appointments'   => $patientData ? $patientData->appointments->count() : 0,
-            'pending_appointments' => $patientData ? $patientData->appointments->where('status', 'pending')->count() : 0,
-            'total_treatments'     => $patientData ? $patientData->dentalRecords->count() : 0,
-            'remaining_balance'    => $patientData ? $patientData->invoices->whereIn('status', ['unpaid', 'partially_paid'])->sum('balance_amount') : 0,
+            'total_appointments' => $patientData ? $patientData->appointments->count() : 0,
         ];
 
-        $invoices = $patientData ? $patientData->invoices : [];
-
         return Inertia::render('Patient/Dashboard', [
-            'patient'  => $patientData,
-            'stats'    => $stats,
-            'invoices' => $invoices,
+            'patient' => $patientData,
+            'stats'   => $stats,
         ]);
     }
 
-    public function createAppointment()
+    /**
+     * Execute transactional appointment booking with strict validation.
+     *
+     * @param StoreAppointmentRequest $request
+     * @return RedirectResponse
+     */
+    public function book(StoreAppointmentRequest $request): RedirectResponse
     {
-        $doctors = Doctor::with(['user', 'specialization'])->get()->map(function ($doctor) {
-            return [
-                'id' => $doctor->id,
-                'name' => 'Dr. ' . $doctor->user->first_name . ' ' . $doctor->user->last_name,
-                'specialization' => $doctor->specialization ? $doctor->specialization->name : 'General Dentistry'
-            ];
-        });
+        $patient = Auth::user()?->patient;
 
-        return Inertia::render('Patient/AppointmentCreate', [
-            'doctors' => $doctors
-        ]);
-    }
+        if (!$patient) {
+            abort(403, 'Unauthorized contextual boundary mapping missing.');
+        }
 
-    public function storeAppointment(Request $request)
-    {
-        $userId = Auth::id();
-        $patient = Patient::where('user_id', $userId)->firstOrFail();
+        $success = $this->bookingService->bookAppointment($request->validated(), $patient);
 
-        $request->validate([
-            'doctor_id' => 'required|exists:doctors,id',
-            'appointment_date' => 'required|date|after_or_equal:today',
-            'start_time' => 'required',
-            'reason_for_visit' => 'required|string|min:10|max:1000',
-        ]);
-
-        $startTime = Carbon::createFromFormat('H:i', $request->start_time);
-        $endTime = $startTime->copy()->addMinutes(30)->format('H:i');
-
-        //  (Overlap Collision Prevention)
-        $isOverlapping = Appointment::where('doctor_id', $request->doctor_id)
-            ->where('appointment_date', $request->appointment_date)
-            ->where('status', '!=', 'cancelled')
-            ->where(function ($query) use ($request, $endTime) {
-                $query->where(function ($q) use ($request, $endTime) {
-                    $q->where('start_time', '<', $endTime)
-                        ->where('end_time', '>', $request->start_time);
-                });
-            })->exists();
-
-        if ($isOverlapping) {
+        if (!$success) {
             return back()->withErrors([
                 'start_time' => 'The selected time slot conflicts with an existing appointment for this doctor. Please choose a different time or date.'
             ]);
         }
 
-        Appointment::create([
-            'patient_id' => $patient->id,
-            'doctor_id' => $request->doctor_id,
-            'appointment_date' => $request->appointment_date,
-            'start_time' => $request->start_time,
-            'end_time' => $endTime,
-            'status' => 'pending',
-            'reason_for_visit' => $request->reason_for_visit,
-        ]);
-
-        return redirect()->route('patient.dashboard')->with('success', 'Your appointment has been requested successfully.');
+        return redirect()
+            ->route('patient.dashboard')
+            ->with('success', 'Your appointment has been requested successfully.');
     }
 
-    // 1. Show payment page for invoice
-    public function checkoutInvoice(Invoice $invoice)
+    /**
+     * Hydrate centralized point-of-sale visualization terminals.
+     *
+     * @param Invoice $invoice
+     * @return InertiaResponse
+     */
+    public function checkoutInvoice(Invoice $invoice): InertiaResponse
     {
-        $patient = Auth::user()->patient;
-        if ($invoice->patient_id !== $patient->id) {
-            abort(403, 'Unauthorized action.');
-        }
+        Gate::authorize('pay', $invoice);
 
         return Inertia::render('Patient/InvoicePayment', [
             'invoice' => $invoice->load('doctor.user')

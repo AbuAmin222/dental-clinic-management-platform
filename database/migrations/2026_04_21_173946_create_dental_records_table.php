@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('dental_records', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('doctor_id')->constrained('doctors')->cascadeOnDelete();
-            $table->foreignId('patient_id')->constrained('patients')->cascadeOnDelete();
+            $table->foreignId('doctor_id')->constrained('doctors')->restrictOnDelete();
+            $table->foreignId('patient_id')->constrained('patients')->restrictOnDelete();
             $table->foreignId('appointment_id')->nullable()->constrained('appointments')->nullOnDelete();
 
             $table->string('tooth_number')->nullable();
@@ -34,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('dental__records');
+        Schema::dropIfExists('dental_records');
     }
 };

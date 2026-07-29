@@ -1,92 +1,132 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
+use App\Http\Responses\LoginResponse;
+use App\Models\User;
+use App\Notifications\QueuedResetPassword;
+use App\Notifications\QueuedVerifyEmail;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
-use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
-use Laravel\Fortify\Fortify;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
-use App\Http\Responses\LoginResponse;
-use Illuminate\Auth\Notifications\ResetPassword;
-use Illuminate\Auth\Notifications\VerifyEmail;
-use Illuminate\Notifications\Messages\MailMessage;
+use Laravel\Fortify\Fortify;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 
+/**
+ * Class FortifyServiceProvider
+ *
+ * Identity & Access Management (IAM) Identity Bootstrapper for the Dental Clinic Application (DCA).
+ * This provider orchestrates Laravel Fortify authentication services with production-ready optimizations,
+ * leveraging strict compile-time types, asynchronous decoupled notifications, and dynamic multi-channel
+ * lookup engines tailored for extreme scalability and elite performance.
+ *
+ * @package App\Providers
+ */
 class FortifyServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
+     * Register any application authentication services.
+     *
+     * Injects core contract implementations into the IoC service container. Customizes the global
+     * authentication response workflow by binding a multi-role dynamic redirection routing layer.
+     *
+     * @return void
      */
     public function register(): void
     {
+        // Bind the unified custom dynamic redirect response engine for high architectural flexibility
         $this->app->singleton(LoginResponseContract::class, LoginResponse::class);
     }
 
     /**
-     * Bootstrap any application services.
+     * Bootstrap any application authentication services.
+     *
+     * Initializes the defensive rate-limiting architecture, binds custom multi-channel (email/username)
+     * authentication pipelines, hooks deferred queue notification listeners, and maps front-end
+     * single-page interactive views to Inertia components.
+     *
+     * @return void
      */
     public function boot(): void
     {
+        // Section 1: Register Core Fortify Decoupled Action Processors (SRP Compliance)
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
 
-        RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())) . '|' . $request->ip());
-
-            return Limit::perMinute(5)->by($throttleKey);
+        // Section 2: Decoupled Async Notification Pipeline Overrides
+        // Intercepts default synchronous mailing to offload transaction overhead onto background worker queues.
+        ResetPassword::toMailUsing(static function (User $user, string $token): void {
+            $user->notify(new QueuedResetPassword($token));
         });
 
-        RateLimiter::for('two-factor', function (Request $request) {
-            return Limit::perMinute(5)->by($request->session()->get('login.id'));
+        VerifyEmail::toMailUsing(static function (User $user): void {
+            $user->notify(new QueuedVerifyEmail());
         });
 
-        VerifyEmail::toMailUsing(function ($notifiable, $url) {
-            return (new MailMessage)
-                ->subject('Action Required: Verify Your Dental Clinic Account')
-                ->greeting('Welcome to Dental Clinic Management Platform!')
-                ->line('Thank you for joining our professional medical network. To ensure the security of clinical data and activate your administrative dashboard, please verify your identity.')
-                ->action('Activate & Verify Account', $url)
-                ->line('This secure verification link will expire in 60 minutes for your security.')
-                ->line('If you did not initiate this registration, please disregard this email or contact our system administrator.')
-                ->salutation('Best Regards,' . "\n" . 'Dental Clinic Operations Team');
+        // Section 3: High-Security Infrastructure Brute-Force Rate Limiters
+        RateLimiter::for('login', static function (Request $request): Limit {
+            // Unify credentials to extract a single clean lowercase lookup target irrespective of using email or username
+            $loginValue = Str::transliterate(
+                Str::lower((string) ($request->input('email') ?? $request->input('login')))
+            );
+
+            return Limit::perMinute(5)->by($loginValue . '|' . $request->ip());
         });
 
-        // 2. تخصيص رسالة استعادة كلمة المرور (Password Reset Email)
-        ResetPassword::toMailUsing(function ($notifiable, $token) {
-            // بناء رابط الاستعادة الموجه لصفحة الواجهة الأمامية
-            $url = url(route('password.reset', [
-                'token' => $token,
-                'email' => $notifiable->getEmailForPasswordReset(),
-            ], false));
+        RateLimiter::for('two-factor', static function (Request $request): Limit {
+            $sessionId = (string) $request->session()->get('login.id');
 
-            return (new MailMessage)
-                ->subject('Security Alert: Reset Your Password Request')
-                ->greeting('Hello,')
-                ->line('We received a formal request to reset the password associated with your Dental Clinic account.')
-                ->action('Reset Secure Password', $url)
-                ->line('This recovery link is strictly valid for 60 minutes. If you did not make this request, your account credentials remain safe and no further action is required.')
-                ->salutation('Security & Integrity Team,' . "\n" . 'Dental Clinic Platform');
+            return Limit::perMinute(5)->by($sessionId . '|' . $request->ip());
         });
 
-        // 3. ربط واجهات استعادة كلمة المرور مع Inertia
-        Fortify::requestPasswordResetLinkView(function () {
-            return inertia('Auth/ForgotPassword');
+        // Section 4: High-Performance Seamless Dual-Credential Authentication (Email or Username)
+        Fortify::authenticateUsing(static function (Request $request): ?User {
+            $loginTarget = (string) ($request->input('email') ?? $request->input('login'));
+
+            if (empty($loginTarget)) {
+                return null;
+            }
+
+            // High-performance indexed database lookup accommodating either email or username natively
+            $user = User::where('email', $loginTarget)
+                ->orWhere('username', $loginTarget)
+                ->first();
+
+            if ($user && Hash::check((string) $request->input('password'), $user->password)) {
+                return $user;
+            }
+
+            return null;
         });
 
-        Fortify::resetPasswordView(function ($request) {
-            return inertia('Auth/ResetPassword', [
-                'token' => $request->route('token'),
-                'email' => $request->email,
+        // Section 5: Bind Authentication Front-End View Interactivity via Inertia
+        Fortify::loginView(static function (): InertiaResponse {
+            return Inertia::render('Auth/Login');
+        });
+
+        Fortify::requestPasswordResetLinkView(static function (): InertiaResponse {
+            return Inertia::render('Auth/ForgotPassword');
+        });
+
+        Fortify::resetPasswordView(static function (Request $request): InertiaResponse {
+            return Inertia::render('Auth/ResetPassword', [
+                'token' => (string) $request->route('token'),
+                'email' => (string) $request->query('email'),
             ]);
         });
     }

@@ -1,32 +1,45 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Receptionist;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Receptionist\StoreInvoiceRequest;
 use App\Models\Appointment;
 use App\Models\Invoice;
 use App\Models\Pricing;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 
+/**
+ * Class InvoiceController
+ *
+ * Governs the billing life-cycle, strictly authorizing via standard InvoicePolicy policies.
+ *
+ * @package App\Http\Controllers\Receptionist
+ */
 class InvoiceController extends Controller
 {
     /**
      * Show Create/Edit financial invoice for an appointment.
+     *
+     * @param Appointment $appointment
+     * @return InertiaResponse
      */
-    public function create(Appointment $appointment)
+    public function create(Appointment $appointment): InertiaResponse
     {
-        // Eager load to optimize query performance
+        $this->authorize('create', Invoice::class);
+
         $appointment->load(['patient.user', 'doctor.user']);
 
-        // Explicitly fetch the first record or return null (fixes the empty array [] JS truthy bug)
         $invoice = Invoice::where('appointment_id', $appointment->id)->first();
-
         $pricings = Pricing::where('doctor_id', $appointment->doctor_id)->get();
 
-        return inertia('Receptionist/Invoices/Create', [
+        return Inertia::render('Receptionist/Invoices/Create', [
             'appointment' => $appointment,
             'pricings'    => $pricings,
             'invoice'     => $invoice,
@@ -34,25 +47,23 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Save or update the appointment invoice.
+     * Save or update the appointment invoice within strict ACID transaction blocks.
+     *
+     * @param StoreInvoiceRequest $request
+     * @param Appointment $appointment
+     * @return RedirectResponse
      */
-    public function store(Request $request, Appointment $appointment)
+    public function store(StoreInvoiceRequest $request, Appointment $appointment): RedirectResponse
     {
-        $input = $request->all();
+        $this->authorize('create', Invoice::class);
 
-        Validator::make($input, [
-            'total_amount' => 'required|numeric|min:0',
-            'paid_amount'  => 'required|numeric|min:0|max:' . ($input['total_amount'] ?? 0),
-            'status'       => 'required|in:paid,unpaid,partially_paid',
-            'due_date'     => 'required|date',
-        ])->validate();
+        $validated = $request->validated();
 
-        DB::transaction(function () use ($input, $appointment) {
-            $total = floatval($input['total_amount']);
-            $paid = floatval($input['paid_amount']);
-            $balance_amount = max(0, $total - $paid);
+        DB::transaction(static function () use ($validated, $appointment): void {
+            $total = (float) $validated['total_amount'];
+            $paid = (float) $validated['paid_amount'];
+            $balance = max(0.0, $total - $paid);
 
-            // Atomic Upsert operation protecting system records
             Invoice::updateOrCreate(
                 ['appointment_id' => $appointment->id],
                 [
@@ -60,31 +71,40 @@ class InvoiceController extends Controller
                     'patient_id'     => $appointment->patient_id,
                     'total_amount'   => $total,
                     'paid_amount'    => $paid,
-                    'balance_amount' => $balance_amount,
-                    'status'         => $input['status'],
-                    'due_date'       => Carbon::parse($input['due_date'])->toDateTimeString(),
+                    'balance_amount' => $balance,
+                    'status'         => $validated['status'],
+                    'due_date'       => Carbon::parse($validated['due_date'])->toDateTimeString(),
                 ]
             );
         });
 
-        return redirect()->route('receptionist.appointments.index')
+        return redirect()
+            ->route('receptionist.appointments.index')
             ->with('success', 'Invoice processed successfully!');
     }
 
     /**
-     * Delete the single resource instance.
+     * Safely delete the invoice associated with the specific appointment context.
+     *
+     * @param Appointment $appointment
+     * @return RedirectResponse
      */
-    public function destroy(Appointment $appointment)
+    public function destroy(Appointment $appointment): RedirectResponse
     {
         $invoice = Invoice::where('appointment_id', $appointment->id)->first();
 
-        if ($invoice) {
-            $invoice->delete();
-            return redirect()->route('receptionist.appointments.index')
-                ->with('success', 'Invoice deleted successfully!');
+        if (!$invoice) {
+            return redirect()
+                ->route('receptionist.appointments.index')
+                ->with('error', 'No invoice found to delete.');
         }
 
-        return redirect()->route('receptionist.appointments.index')
-            ->with('error', 'No invoice found to delete.');
+        $this->authorize('delete', $invoice);
+
+        $invoice->delete();
+
+        return redirect()
+            ->route('receptionist.appointments.index')
+            ->with('success', 'Invoice deleted successfully!');
     }
 }

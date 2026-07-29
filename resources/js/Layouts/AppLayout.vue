@@ -11,13 +11,11 @@ import Swal from "sweetalert2";
 import ApplicationFooter from "@/Components/ApplicationFooter.vue";
 
 const page = usePage();
-const title = defineProps({ title: String });
+const props = defineProps({ title: String });
 const showingNavigationDropdown = ref(false);
 
-// 🛡️ جلب دور المستخدم الحالي بصيغة حاسوبية مخزنة مؤقتاً بالذاكرة لسرعة الاستجابة
 const userRole = computed(() => page.props.auth.user?.role);
 
-// 🗺️ خريطة الروابط الذكية المتجاوبة والقابلة للتوسع لأي أدوار مستقبلية دون تعديل الهيكل الأساسي
 const navigationLinks = computed(() => {
   const links = [{ name: "Main", href: route("dashboard"), routeName: "dashboard" }];
 
@@ -39,7 +37,6 @@ const navigationLinks = computed(() => {
   return links;
 });
 
-// 🔄 دالة موحدة لإطلاق التنبيهات بأداء عالٍ واستهلاك أقل للذاكرة
 const showToast = (message, type = "success") => {
   Swal.fire({
     title: type === "success" ? "Success!" : "Error!",
@@ -80,13 +77,13 @@ watch(
     if (flash?.success) showToast(flash.success, "success");
     if (flash?.error) showToast(flash.error, "error");
   },
-  { deep: true, immediate: true } // التفعيل الفوري يغني تماماً عن استخدام onMounted
+  { deep: true, immediate: true }
 );
 </script>
 
 <template>
   <div>
-    <Head :title="{ title }" />
+    <Head :title="props.title" />
     <Banner />
 
     <div class="min-h-screen bg-slate-50">

@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Number;
 
 class Invoice extends Model
 {
@@ -59,7 +58,7 @@ class Invoice extends Model
     /**
      * Dynamic business logic helper to trigger a secure payment increment.
      */
-    public function pay($amount)
+    public function pay(float $amount): bool
     {
         $this->paid_amount += $amount;
 

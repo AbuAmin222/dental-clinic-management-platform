@@ -3,11 +3,9 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import { Link } from "@inertiajs/vue3";
 import { onMounted } from "vue";
 
-// استيراد الأدوات المساعدة المعتمدة في مشروعك
 import { formatCurrency } from "@/Utils";
 import { useNotifications } from "@/Composables";
 
-// استقبال جميع البيانات الممررة من الـ Backend Controller
 defineProps({
   patient: {
     type: Object,
@@ -34,7 +32,6 @@ onMounted(() => {
   toast("Welcome back to your secure health portal!", "success");
 });
 
-// دالة تنسيق شارات المواعيد
 const getStatusBadge = (status) => {
   const styles = {
     pending: "bg-amber-50 text-amber-700 border-amber-200",
@@ -45,7 +42,6 @@ const getStatusBadge = (status) => {
   return styles[status] || "bg-gray-50 text-gray-700 border-gray-200";
 };
 
-// دالة تنسيق شارات الفواتير (تم إصلاحها لكي تطابق جدول العرض المكتوب بالأسفل)
 const getInvoiceStatusBadge = (status) => {
   const styles = {
     paid: "bg-emerald-50 text-emerald-700 border-emerald-200",

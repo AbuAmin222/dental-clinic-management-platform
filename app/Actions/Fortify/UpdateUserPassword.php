@@ -12,9 +12,12 @@ class UpdateUserPassword implements UpdatesUserPasswords
     use PasswordValidationRules;
 
     /**
-     * Validate and update the user's password.
+     * Validate inputs and update user credential password securely while verifying integrity of current secret.
      *
-     * @param  array<string, string>  $input
+     * @param  \App\Models\User      $user   The targeting authenticated account data model.
+     * @param  array<string, string> $input  Form array payload housing parameters.
+     * @return void
+     * * @throws \Illuminate\Validation\ValidationException
      */
     public function update(User $user, array $input): void
     {

@@ -8,3 +8,4 @@ storage/framework/views/*
 storage/logs/*
 bootstrap/cache/*.php
 !bootstrap/cache/.gitignore
+Other/

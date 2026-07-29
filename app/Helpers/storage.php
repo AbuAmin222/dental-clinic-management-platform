@@ -1,13 +1,20 @@
 <?php
 
-use App\Services\FileStorageService;
+declare(strict_types=1);
 
-if (!function_exists('storage_engine')) {
+namespace App\Helpers;
+
+use App\Contracts\Storage\FileStorageServiceInterface;
+
+if (! function_exists('storage_engine')) {
     /**
-     * Access the Global File Storage Service Engine.
+     * Access the unified Global File Storage Service Engine instance.
+     * This helper resolves the abstract decoupled storage engine contract from Laravel's IoC container.
+     *
+     * @return \App\Contracts\Storage\FileStorageServiceInterface
      */
-    function storage_engine(): FileStorageService
+    function storage_engine(): FileStorageServiceInterface
     {
-        return app(FileStorageService::class);
+        return app(FileStorageServiceInterface::class);
     }
 }

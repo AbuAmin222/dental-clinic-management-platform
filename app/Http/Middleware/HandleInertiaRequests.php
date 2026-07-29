@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
@@ -31,42 +33,69 @@ class HandleInertiaRequests extends Middleware
      *
      * @see https://inertiajs.com/shared-data
      *
+     * @param  \Illuminate\Http\Request  $request
      * @return array<string, mixed>
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return array_merge(parent::share($request), [
-            // 🌟 مشاركة بيانات المصادقة والدور عالمياً في الواجهة الأمامية
             'auth' => [
-                'user' => $request->user() ? [
-                    'id' => $request->user()->id,
-                    'first_name' => $request->user()->first_name,
-                    'middle_name' => $request->user()->middle_name,
-                    'last_name' => $request->user()->last_name,
-
-                    'username' => $request->user()->username,
-                    'email' => $request->user()->email,
-
-                    'phone' => $request->user()->phone,
-                    'gender' => $request->user()->gender,
-                    'date_of_birth' => $request->user()->date_of_birth,
-                    'address' => $request->user()->address,
-
-                    'role' => $request->user()->role,
-
-                    'profile_photo_url' => $request->user()->profile_photo_url,
+                'user' => $user ? [
+                    'id'                => $user->id,
+                    'first_name'        => $user->first_name,
+                    'middle_name'       => $user->middle_name,
+                    'last_name'         => $user->last_name,
+                    'username'          => $user->username,
+                    'email'             => $user->email,
+                    'phone'             => $user->phone,
+                    'gender'            => $user->gender,
+                    'date_of_birth'     => $user->date_of_birth,
+                    'address'           => $user->address,
+                    'role'              => $user->role,
+                    'profile_photo_url' => $user->profile_photo_url,
                 ] : null,
             ],
-            'roleData' => $request->user() ? match ($request->user()->role) {
-                'patient' => $request->user()->patient,
-                'doctor' => $request->user()->doctor,
-                'receptionist' => $request->user()->receptionist,
-                default => null,
-            } : null,
-            'flash' => [
-                'success' => fn() => $request->session()->get('success'),
-                'error'   => fn() => $request->session()->get('error'),
+            'roleData' => $user ? $this->transformRoleData($user) : null,
+            'flash'    => [
+                'success' => static fn() => $request->session()->get('success'),
+                'error'   => static fn() => $request->session()->get('error'),
             ],
         ]);
+    }
+
+    /**
+     * Securely maps and serializes polymorphic profile metadata to prevent database schema leakage.
+     *
+     * @param  \App\Models\User  $user
+     * @return array<string, mixed>|null
+     */
+    protected function transformRoleData($user): ?array
+    {
+        return match ($user->role) {
+            'patient' => $user->patient ? [
+                'id'                     => $user->patient->id,
+                'blood_group'            => $user->patient->blood_group,
+                'emergency_contact_name' => $user->patient->emergency_contact_name,
+                'emergency_contact_phone'=> $user->patient->emergency_contact_phone,
+            ] : null,
+
+            'doctor' => $user->doctor ? [
+                'id'                => $user->doctor->id,
+                'specialization_id' => $user->doctor->specialization_id,
+                'license_number'    => $user->doctor->license_number,
+                'experience_years'  => $user->doctor->experience_years,
+                'bio'               => $user->doctor->bio,
+            ] : null,
+
+            'receptionist' => $user->receptionist ? [
+                'id'              => $user->receptionist->id,
+                'department_id'   => $user->receptionist->department_id,
+                'employee_number' => $user->receptionist->employee_number,
+            ] : null,
+
+            default => null, 
+        };
     }
 }

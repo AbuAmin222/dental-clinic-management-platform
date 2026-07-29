@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Actions\Jetstream\DeleteUser;
@@ -11,6 +13,8 @@ class JetstreamServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
+     *
+     * @return void
      */
     public function register(): void
     {
@@ -19,18 +23,26 @@ class JetstreamServiceProvider extends ServiceProvider
 
     /**
      * Bootstrap any application services.
+     * * Bootstraps customized cascading account deletion strategies and adjusts
+     * asset loader prefetch limits for superior dashboard transitions.
+     *
+     * @return void
      */
     public function boot(): void
     {
         $this->configurePermissions();
 
+        // Bind our high-integrity, decoupled user cascading cleanup handler
         Jetstream::deleteUsersUsing(DeleteUser::class);
 
+        // Prefetch configuration for lightning-fast assets synchronization
         Vite::prefetch(concurrency: 3);
     }
 
     /**
-     * Configure the permissions that are available within the application.
+     * Configure the strict state permission parameters accessible to system API tokens.
+     *
+     * @return void
      */
     protected function configurePermissions(): void
     {

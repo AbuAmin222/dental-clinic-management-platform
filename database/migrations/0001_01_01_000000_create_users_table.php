@@ -31,7 +31,7 @@ return new class extends Migration
             $table->date('date_of_birth');
             $table->string('address')->nullable();
 
-            $table->boolean('is_active')->default(true);
+            $table->boolean('is_active')->default(false);
             $table->rememberToken();
             $table->foreignId('current_team_id')->nullable();
 

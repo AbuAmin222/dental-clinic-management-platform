@@ -1,22 +1,47 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
+use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Class DashboardsController
+ *
+ * Central Gateway Controller mediating initial access traffic post-login.
+ * Adheres strictly to the Open-Closed Principle (OCP) by dynamically resolving
+ * role-based dashboard routes without modifying control logic when new roles are introduced.
+ *
+ * @package App\Http\Controllers
+ */
 class DashboardsController extends Controller
 {
-    public function index()
+    /**
+     * Dynamically resolve and route authenticated user to their respective dashboard interface.
+     *
+     * @return \Symfony\Component\HttpFoundation\Response|\Illuminate\Http\RedirectResponse
+     */
+    public function index(): InertiaResponse|RedirectResponse|Response
     {
-        $role = Auth::user()->role;
+        $user = Auth::user();
 
-        return match ($role) {
-            'doctor'       => redirect()->route('doctor.dashboard'),
-            'patient'      => redirect()->route('patient.dashboard'),
-            'receptionist' => redirect()->route('receptionist.dashboard'),
-            'admin'        => redirect()->route('admin.dashboard'),
-            default        => Inertia::render('Dashboard'),
-        };
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        $role = strtolower((string) $user->role);
+        $targetRoute = "{$role}.dashboard";
+
+        if ($role !== '' && Route::has($targetRoute)) {
+            return redirect()->route($targetRoute);
+        }
+
+        return Inertia::render('Dashboard');
     }
 }

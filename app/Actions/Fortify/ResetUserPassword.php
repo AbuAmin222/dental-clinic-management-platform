@@ -12,9 +12,12 @@ class ResetUserPassword implements ResetsUserPasswords
     use PasswordValidationRules;
 
     /**
-     * Validate and reset the user's forgotten password.
+     * Reset the requested user password efficiently inside standard recovery pipelines.
      *
-     * @param  array<string, string>  $input
+     * @param  \App\Models\User      $user   The designated target user model.
+     * @param  array<string, string> $input  Pre-validated array package of passwords.
+     * @return void
+     * * @throws \Illuminate\Validation\ValidationException
      */
     public function reset(User $user, array $input): void
     {
