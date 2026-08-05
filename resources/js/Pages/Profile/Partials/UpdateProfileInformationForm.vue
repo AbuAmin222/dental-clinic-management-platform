@@ -111,7 +111,7 @@ const deletePhoto = () => {
         <div class="relative group">
           <div v-show="!profilePreview" class="relative">
             <img
-              :src="$page.props.auth.user.profile_photo_url"
+              :src="$page.props.auth.user.profile_photo_path"
               :alt="$page.props.auth.user.full_name"
               class="rounded-full h-24 w-24 object-cover ring-4 ring-white shadow-md transition duration-300"
             />

@@ -33,10 +33,6 @@ class DeleteUser implements DeletesUsers
      */
     public function delete(User $user): void
     {
-        // 1. Clear out Jetstream API tokens if the feature is enabled in the application
-        $user->tokens->each->delete();
-
-        // 2. Delegate the cascading profile deletion and storage cleanups to the central service layer
         $this->userService->deleteUser($user);
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Appointment;
 
+use App\Exceptions\BusinessRuleViolationException;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use Carbon\Carbon;
@@ -15,6 +16,14 @@ use Illuminate\Support\Facades\DB;
  */
 class AppointmentService
 {
+    /**
+     * Default appointment duration applied when the caller does not supply an explicit
+     * end_time (e.g. the patient self-booking flow, which only collects start_time).
+     *
+     * Business rule (confirmed, provisional): 30 minutes.
+     */
+    private const DEFAULT_DURATION_MINUTES = 30;
+
     /**
      * Book a new clinical appointment preventing schedule conflicts.
      *
@@ -31,10 +40,12 @@ class AppointmentService
                 ->firstOrFail();
 
             if ($this->isOverlapping($data)) {
-                throw new \DomainException(__('The selected doctor is unavailable at this specific time slot.'));
+                throw new BusinessRuleViolationException(
+                    __('The selected doctor is unavailable at this specific time slot.')
+                );
             }
 
-            $appointment = $this->stroeAppointemnt($data);
+            $appointment = $this->storeAppointment($data);
 
             return $appointment;
         });
@@ -52,7 +63,9 @@ class AppointmentService
         return DB::transaction(function () use ($appointment, $data) {
             if (isset($data['start_time'], $data['appointment_date'])) {
                 if ($this->isOverlapping($data)) {
-                    throw new \DomainException(__('The time slot is already booked for this doctor.'));
+                    throw new BusinessRuleViolationException(
+                        __('The time slot is already booked for this doctor.')
+                    );
                 }
             }
 
@@ -76,7 +89,7 @@ class AppointmentService
     protected function isOverlapping(array $data): bool
     {
         $startTime = Carbon::parse($data['start_time'])->format('H:i:s');
-        $endTime = Carbon::parse($data['end_time'])->format('H:i:s');
+        $endTime = $this->resolveEndTime($data);
 
         $truthValue = Appointment::where('doctor_id', $data['doctor_id'])
             ->where('appointment_date', $data['appointment_date'])
@@ -90,18 +103,18 @@ class AppointmentService
         return $truthValue;
     }
 
-    protected function stroeAppointemnt(array $data): Appointment
+    protected function storeAppointment(array $data): Appointment
     {
         $date = Carbon::parse($data['appointment_date'])->format('Y-m-d');
         $startTime = Carbon::parse($data['start_time'])->format('H:i:s');
-        $endTime = Carbon::parse($data['end_time'])->format('H:i:s');
+        $endTime = $this->resolveEndTime($data);
 
         $appointment = Appointment::create([
             'patient_id'       => $data['patient_id'],
             'doctor_id'        => $data['doctor_id'],
             'appointment_date' => $date,
             'start_time'       => $startTime,
-            'end_time'         => $endTime ?? null,
+            'end_time'         => $endTime,
             'reason_for_visit' => $data['reason_for_visit'] ?? null,
             'doctor_notes'     => $data['doctor_notes'] ?? null,
             'status'           => 'scheduled',
@@ -109,8 +122,23 @@ class AppointmentService
         return $appointment;
     }
 
-    protected function getMessage(string $name = null, string $message, string $status)
+    /**
+     * Resolve the appointment end_time, defaulting to start_time plus a fixed
+     * provisional duration when the caller (e.g. patient self-booking) does not supply one.
+     * Centralizing this here means both isOverlapping() and storeAppointment() always see
+     * a consistent, non-null end_time and neither can throw on a missing array key.
+     *
+     * @param array<string, mixed> $data
+     * @return string H:i:s formatted end time.
+     */
+    protected function resolveEndTime(array $data): string
     {
-        return "";
+        if (!empty($data['end_time'])) {
+            return Carbon::parse($data['end_time'])->format('H:i:s');
+        }
+
+        return Carbon::parse($data['start_time'])
+            ->addMinutes(self::DEFAULT_DURATION_MINUTES)
+            ->format('H:i:s');
     }
 }

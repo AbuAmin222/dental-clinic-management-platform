@@ -9,9 +9,9 @@ use App\Http\Requests\Receptionist\StoreInvoiceRequest;
 use App\Models\Appointment;
 use App\Models\Invoice;
 use App\Models\Pricing;
+use App\Services\PaymentService\InvoiceService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
@@ -24,6 +24,10 @@ use Inertia\Response as InertiaResponse;
  */
 class InvoiceController extends Controller
 {
+    public function __construct(
+        protected readonly InvoiceService $invoiceService
+    ) {}
+
     /**
      * Show Create/Edit financial invoice for an appointment.
      *
@@ -47,7 +51,13 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Save or update the appointment invoice within strict ACID transaction blocks.
+     * Save or update the appointment invoice.
+     *
+     * Previously duplicated InvoiceService::upsertForAppointment()'s logic inline,
+     * including a manually computed `balance_amount` that could drift from the value the
+     * Invoice model itself auto-computes on its `saving` event. Now delegates entirely to
+     * the Service (single source of truth for invoice persistence rules), consistent with
+     * the confirmed one-to-one Appointment<->Invoice business rule.
      *
      * @param StoreInvoiceRequest $request
      * @param Appointment $appointment
@@ -58,25 +68,9 @@ class InvoiceController extends Controller
         $this->authorize('create', Invoice::class);
 
         $validated = $request->validated();
+        $validated['due_date'] = Carbon::parse($validated['due_date'])->toDateTimeString();
 
-        DB::transaction(static function () use ($validated, $appointment): void {
-            $total = (float) $validated['total_amount'];
-            $paid = (float) $validated['paid_amount'];
-            $balance = max(0.0, $total - $paid);
-
-            Invoice::updateOrCreate(
-                ['appointment_id' => $appointment->id],
-                [
-                    'doctor_id'      => $appointment->doctor_id,
-                    'patient_id'     => $appointment->patient_id,
-                    'total_amount'   => $total,
-                    'paid_amount'    => $paid,
-                    'balance_amount' => $balance,
-                    'status'         => $validated['status'],
-                    'due_date'       => Carbon::parse($validated['due_date'])->toDateTimeString(),
-                ]
-            );
-        });
+        $this->invoiceService->upsertForAppointment($validated, $appointment);
 
         return redirect()
             ->route('receptionist.appointments.index')
@@ -99,7 +93,7 @@ class InvoiceController extends Controller
                 ->with('error', 'No invoice found to delete.');
         }
 
-        $this->authorize('delete', $invoice);
+        $this->authorize('delete', [$invoice, $appointment]);
 
         $invoice->delete();
 

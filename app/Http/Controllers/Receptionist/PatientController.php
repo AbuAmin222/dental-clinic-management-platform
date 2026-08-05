@@ -16,10 +16,21 @@ use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Class PatientController
+ *
+ * FIX (2026-08-04): this Controller previously had zero model-level authorization -- every
+ * action relied solely on the `role:receptionist` route middleware, unlike every other
+ * clinical/financial Controller in the project. Now wired to the newly-created PatientPolicy.
+ *
+ * @package App\Http\Controllers\Receptionist
+ */
 class PatientController extends Controller
 {
     public function index(Request $request): InertiaResponse
     {
+        $this->authorize('viewAny', Patient::class);
+
         $searchTerm = $request->input('search');
 
         $patients = Patient::with('user')
@@ -44,6 +55,8 @@ class PatientController extends Controller
 
     public function create(): InertiaResponse
     {
+        $this->authorize('create', Patient::class);
+
         return Inertia::render('Receptionist/Patients/Create');
     }
 
@@ -51,6 +64,8 @@ class PatientController extends Controller
         StorePatientRequest $request,
         RegisterPatientAction $registerPatientAction
     ): RedirectResponse {
+        $this->authorize('create', Patient::class);
+
         $registerPatientAction->execute($request->validated());
 
         return redirect()
@@ -60,6 +75,8 @@ class PatientController extends Controller
 
     public function show(Patient $patient): InertiaResponse
     {
+        $this->authorize('view', $patient);
+
         $patient->load([
             'user',
             'appointments' => static function ($query): void {
@@ -74,6 +91,11 @@ class PatientController extends Controller
         ]);
     }
 
+    /**
+     * Public utility check -- no model-level authorization needed (does not expose or mutate
+     * any Patient/User record, only confirms whether a candidate username string is already
+     * taken, consistent with RegisterEmailCheckController's equivalent email check).
+     */
     public function checkUsername(Request $request): JsonResponse
     {
         $request->validate([

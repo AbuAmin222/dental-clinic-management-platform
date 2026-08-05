@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
 
 use function App\Helpers\storage_engine;
+
 // Make photo Name and submit it to upload and update.
 // Make Core data operations(crud).
 class UserService
@@ -102,6 +103,8 @@ class UserService
     public function deleteUser(User $user): void
     {
         DB::transaction(function () use ($user) {
+            $user->tokens()->delete();
+
             RoleProfileFactory::make($user->role)->delete($user);
 
             if ($user->profile_photo_path) {

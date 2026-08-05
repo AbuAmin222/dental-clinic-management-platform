@@ -43,11 +43,3 @@ class DeleteUserAction
         $this->userService->deleteUser($targetUser);
     }
 }
-//  كيف تستخدم دالة الحذف الجديدة الآن في أي مكان بالنظام؟
-//  ببساطة، داخل أي Controller (سواء للوحة التحكم أو لـ API)، يمكنك حقن الـ Action واستدعاؤه كالتالي:
-//  PHP
-//  public function destroy(User $user, DeleteUserAction $deleteUserAction)
-//  {
-//      $deleteUserAction->execute($user);
-//      return response()->json(['message' => 'User account deleted successfully.']);
-//  }

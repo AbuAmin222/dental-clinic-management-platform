@@ -23,12 +23,19 @@ class PatientHistoryController extends Controller
     /**
      * Render a structured patient health record file encompassing clinical history and historical treatment sheets.
      *
+     * FIX (2026-08-04): previously only checked `viewAny(DentalRecord::class)` -- a role-level
+     * gate that let ANY doctor view the full clinical history of ANY patient, even one they had
+     * never treated. Now additionally enforces `view($patient)` via the newly-created
+     * PatientPolicy, whose DoctorAuthorizationStrategy requires an existing Appointment between
+     * this doctor and this patient before granting access.
+     *
      * @param  \App\Models\Patient  $patient
      * @return \Inertia\Response
      */
     public function show(Patient $patient): InertiaResponse
     {
         $this->authorize('viewAny', DentalRecord::class);
+        $this->authorize('view', $patient);
 
         $patient->load(['user']);
 

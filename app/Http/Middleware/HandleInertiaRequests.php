@@ -54,7 +54,8 @@ class HandleInertiaRequests extends Middleware
                     'date_of_birth'     => $user->date_of_birth,
                     'address'           => $user->address,
                     'role'              => $user->role,
-                    'profile_photo_url' => $user->profile_photo_url,
+                    'identity_photo_path' => $user->identity_photo_path,
+                    'profile_photo_path' => $user->profile_photo_path,
                 ] : null,
             ],
             'roleData' => $user ? $this->transformRoleData($user) : null,
@@ -78,7 +79,7 @@ class HandleInertiaRequests extends Middleware
                 'id'                     => $user->patient->id,
                 'blood_group'            => $user->patient->blood_group,
                 'emergency_contact_name' => $user->patient->emergency_contact_name,
-                'emergency_contact_phone'=> $user->patient->emergency_contact_phone,
+                'emergency_contact_phone' => $user->patient->emergency_contact_phone,
             ] : null,
 
             'doctor' => $user->doctor ? [
@@ -95,7 +96,7 @@ class HandleInertiaRequests extends Middleware
                 'employee_number' => $user->receptionist->employee_number,
             ] : null,
 
-            default => null, 
+            default => null,
         };
     }
 }

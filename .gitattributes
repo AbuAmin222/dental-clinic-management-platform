@@ -9,3 +9,8 @@
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
+Other/
+.mcp.json
+.vscode/mcp.json
+config.json
+Docs/

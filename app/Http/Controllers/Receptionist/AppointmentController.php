@@ -6,12 +6,13 @@ namespace App\Http\Controllers\Receptionist;
 
 use App\Actions\Appointment\BookAppointmentAction;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Receptionist\StoreAppointmentRequest;
+use App\Http\Requests\Receptionist\StoreReceptionistAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
@@ -19,6 +20,8 @@ class AppointmentController extends Controller
 {
     public function index(Request $request): InertiaResponse
     {
+        $this->authorize('viewAny', Appointment::class);
+
         $query = Appointment::with(['patient.user', 'doctor.user', 'invoices']);
 
         if ($request->filled('status') && $request->input('status') !== 'all') {
@@ -51,7 +54,8 @@ class AppointmentController extends Controller
 
     public function create(): InertiaResponse
     {
-        // High-efficiency querying: Select only mandatory projections to ensure high memory scalability.
+        $this->authorize('create', Appointment::class);
+
         $patients = Patient::join('users', 'patients.user_id', '=', 'users.id')
             ->select([
                 'patients.id',
@@ -59,7 +63,7 @@ class AppointmentController extends Controller
                 'users.last_name',
                 'users.identity_number',
             ])
-            ->limit(100) // Keep query scope bounded for response speed
+            ->limit(100)
             ->get()
             ->map(static fn($p): array => [
                 'id'   => $p->id,
@@ -88,13 +92,42 @@ class AppointmentController extends Controller
     }
 
     public function store(
-        StoreAppointmentRequest $request,
+        StoreReceptionistAppointmentRequest $request,
         BookAppointmentAction $bookAppointmentAction
     ): RedirectResponse {
+        $this->authorize('create', Appointment::class);
+
         $bookAppointmentAction->execute($request->validated());
 
         return redirect()
             ->route('receptionist.appointments.index')
             ->with('success', 'The appointment has been securely scheduled with absolute concurrency protection.');
+    }
+
+    /**
+     * This method was missing entirely, despite being wired to the
+     * `receptionist.appointments.updateStatus` PATCH route.
+     *
+     * @param Request $request
+     * @param Appointment $appointment
+     * @return RedirectResponse
+     */
+    public function updateStatus(Request $request, Appointment $appointment): RedirectResponse
+    {
+        $this->authorize('update', $appointment);
+
+        $validated = $request->validate([
+            'status' => [
+                'required',
+                'string',
+                Rule::in(['pending', 'scheduled', 'confirmed', 'completed', 'cancelled', 'no_show']),
+            ],
+        ]);
+
+        $appointment->update(['status' => $validated['status']]);
+
+        return redirect()
+            ->route('receptionist.appointments.index')
+            ->with('success', 'Appointment status updated successfully.');
     }
 }

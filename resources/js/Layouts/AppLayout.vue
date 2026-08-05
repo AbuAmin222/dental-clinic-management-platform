@@ -206,7 +206,7 @@ watch(
                     >
                       <img
                         class="size-8 rounded-full object-cover"
-                        :src="$page.props.auth.user.profile_photo_url"
+                        :src="$page.props.auth.user.profile_photo_path"
                         :alt="$page.props.auth.user.full_name"
                       />
                     </button>
@@ -398,7 +398,7 @@ watch(
               >
                 <img
                   class="size-10 rounded-full object-cover border border-slate-200"
-                  :src="$page.props.auth.user.profile_photo_url"
+                  :src="$page.props.auth.user.profile_photo_path"
                   :alt="$page.props.auth.user.full_name"
                 />
               </div>

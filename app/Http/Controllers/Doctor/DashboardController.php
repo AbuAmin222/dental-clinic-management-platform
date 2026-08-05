@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Doctor;
 
+use App\Factories\Telemetry\DashboardTelemetryFactory;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use Illuminate\Http\Request;
@@ -22,6 +23,13 @@ class DashboardController extends Controller
 {
     /**
      * Compile and display the active doctor's localized daily appointment queue.
+     *
+     * Now also sources its summary counters from
+     * DoctorDashboardTelemetry via DashboardTelemetryFactory, which was previously fully
+     * built but never wired to any Controller. The detailed per-appointment list below is
+     * kept as-is (Telemetry only returns aggregate counts, not the row-level data this page
+     * needs), added additively as a new 'metrics' prop so no existing frontend prop is renamed
+     * or removed.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Inertia\Response
@@ -58,9 +66,12 @@ class DashboardController extends Controller
                 ];
             });
 
+        $telemetry = DashboardTelemetryFactory::make('doctor')->getTelemetry($request->user());
+
         return Inertia::render('Doctor/Dashboard', [
             'appointments' => $appointments,
             'today'        => Carbon::today()->format('l, Y-m-d'),
+            'metrics'      => $telemetry['metrics'],
         ]);
     }
 

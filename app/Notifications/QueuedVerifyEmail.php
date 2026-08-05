@@ -28,7 +28,7 @@ class QueuedVerifyEmail extends BaseVerifyEmail implements ShouldQueue
             ->greeting("Welcome aboard, {$notifiable->first_name}!")
             ->line('Thank you for registering. To complete your professional medical profile setup and unlock your clinic dashboard, please verify your email address.')
             ->action('Activate Account & Verify Email', $verificationUrl)
-            ->line('If you did not execute this registration on our network infrastructure, please disregard this email or notify our system administration safely.')
-            ->salutation("Yours Sincerely,\nOperations & Patient Care Team\Dental Clinic Application (DCA)");
+            ->line('If you did not execute this registration on ourntem administration safely.')
+            ->salutation("Yours Sincerely,\nOperations & Patient Care Team\nDental Clinic Application (DCA)");
     }
 }

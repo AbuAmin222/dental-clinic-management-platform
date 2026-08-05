@@ -22,7 +22,6 @@ const submit = () => {
   });
 };
 
-// عداد تنازلي لمنع إغراق السيرفر بالطلبات (Rate Limiting Security)
 const startCooldown = () => {
   isCooldown.value = true;
   const timer = setInterval(() => {
@@ -47,16 +46,13 @@ const verificationStatusMessage = computed(() => {
     class="font-sans text-slate-900 antialiased bg-gradient-to-br from-slate-50 via-gray-100 to-slate-100 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
   >
     <div class="max-w-md w-full flex flex-col items-center">
-      <!-- الشعار اللوجو -->
       <div class="transform hover:scale-105 transition-transform duration-300 mb-8">
         <AuthenticationCardLogo />
       </div>
 
-      <!-- الكارد الرئيسي -->
       <div
         class="w-full bg-white shadow-xl shadow-slate-200/50 rounded-2xl border border-slate-100 overflow-hidden backdrop-blur-sm"
       >
-        <!-- رأس الكارد -->
         <div class="bg-gradient-to-r from-slate-800 to-indigo-900 p-6 text-center">
           <div
             class="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mx-auto mb-3"
@@ -88,7 +84,6 @@ const verificationStatusMessage = computed(() => {
             it, we will gladly send you another.
           </p>
 
-          <!-- رسالة التغذية الراجعة عند إرسال الرابط بنجاح -->
           <div
             v-if="verificationStatusMessage"
             class="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex items-start gap-3"
@@ -111,7 +106,6 @@ const verificationStatusMessage = computed(() => {
             </p>
           </div>
 
-          <!-- أزرار التحكم -->
           <form
             @submit.prevent="submit"
             class="mt-6 flex items-center justify-between gap-4"
@@ -157,7 +151,6 @@ const verificationStatusMessage = computed(() => {
           </form>
         </div>
 
-        <!-- التوقيع الاحترافي الذكي المدمج (Developer Signature) -->
         <div
           class="bg-slate-50/70 p-5 flex items-center justify-between border-t border-slate-50"
         >

@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Doctor;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Doctor\StorePricingRequest;
+use App\Http\Requests\Doctor\UpdatePricingRequest;
 use App\Models\Pricing;
+use App\Services\PaymentService\PricingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
@@ -17,10 +19,19 @@ use Inertia\Response as InertiaResponse;
  *
  * Controls custom operational fee indices and treatment cost configurations cataloged metrics managed explicitly per doctor profile.
  *
+ * store()/update() previously bypassed the already-built StorePricingRequest /
+ * UpdatePricingRequest (both were orphaned — never referenced by any Controller) and
+ * PricingService, re-implementing the same validation and persistence logic inline.
+ * Both are now wired in, closing the duplication and making PricingService reachable.
+ *
  * @package App\Http\Controllers\Doctor
  */
 class PricingController extends Controller
 {
+    public function __construct(
+        protected readonly PricingService $pricingService
+    ) {}
+
     /**
      * Display the dynamic personal service pricing directory sheet managed by the authenticating Doctor.
      *
@@ -53,55 +64,32 @@ class PricingController extends Controller
     /**
      * Store a brand-new custom clinical price index item entry securely attached inside current domain tracking scopes.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  StorePricingRequest  $request
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StorePricingRequest $request): RedirectResponse
     {
-        $this->authorize('create', Pricing::class);
-
         $doctor = $request->user()?->doctor;
 
         if (!$doctor) {
             abort(403, 'Action blocked: Insufficient institutional medical claims profiles.');
         }
 
-        $input = $request->all();
-        Validator::make($input, [
-            'service_name' => ['required', 'string', 'max:150'],
-            'amount'       => ['required', 'numeric', 'min:0', 'max:999999.99'],
-        ])->validate();
+        $this->pricingService->createPricing($request->validated(), $doctor->id);
 
-        Pricing::create([
-            'doctor_id'    => $doctor->id,
-            'service_name' => $input['service_name'],
-            'amount'       => $input['amount'],
-        ]);
-
-        return redirect()->back()->with('success', 'Service service catalog entry injected successfully.');
+        return redirect()->back()->with('success', 'Service catalog entry injected successfully.');
     }
 
     /**
-     * Update the attributes of an existing verified price catalog resource securely isolated behind strict structural criteria.
+     * Update the attributes of an existing verified price catalog resource.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  UpdatePricingRequest  $request
      * @param  \App\Models\Pricing  $pricing
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(Request $request, Pricing $pricing): RedirectResponse
+    public function update(UpdatePricingRequest $request, Pricing $pricing): RedirectResponse
     {
-        $this->authorize('update', $pricing);
-
-        $input = $request->all();
-        Validator::make($input, [
-            'service_name' => ['required', 'string', 'max:150'],
-            'amount'       => ['required', 'numeric', 'min:0', 'max:999999.99'],
-        ])->validate();
-
-        $pricing->update([
-            'service_name' => $input['service_name'],
-            'amount'       => $input['amount'],
-        ]);
+        $this->pricingService->updatePricing($pricing, $request->validated());
 
         return redirect()->back()->with('success', 'Service transaction configurations synchronized.');
     }

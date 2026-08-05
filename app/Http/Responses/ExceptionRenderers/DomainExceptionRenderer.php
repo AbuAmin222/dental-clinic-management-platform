@@ -13,12 +13,13 @@ class DomainExceptionRenderer implements ExceptionRendererStrategy
 
     /**
      * Maps Custom Domain Exceptions cleanly to structural API definitions.
+     *
      */
     public function render(Throwable $exception): JsonResponse
     {
         /** @var BaseDomainException $exception */
         return $this->errorResponse(
-            // $exception->getMessage(),
+            $exception->getMessage(),
             $exception->getStatusCode(),
             $exception->getErrorDetails(),
             $exception->getDomainCode()

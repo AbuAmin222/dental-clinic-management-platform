@@ -11,7 +11,7 @@ defineProps({
     type: Object,
     default: () => ({ appointments: [], dental_records: [] }),
   },
-  stats: {
+  status: {
     type: Object,
     default: () => ({
       total_appointments: 0,
@@ -71,7 +71,7 @@ const getInvoiceStatusBadge = (status) => {
                 Total Appointments
               </p>
               <h3 class="text-2xl font-bold text-gray-800 mt-1">
-                {{ stats.total_appointments }}
+                {{ status.total_appointments }}
               </h3>
             </div>
             <span class="text-2xl bg-purple-50 p-3 rounded-lg text-purple-600">📅</span>
@@ -85,7 +85,7 @@ const getInvoiceStatusBadge = (status) => {
                 Pending Visits
               </p>
               <h3 class="text-2xl font-bold text-amber-600 mt-1">
-                {{ stats.pending_appointments }}
+                {{ status.pending_appointments }}
               </h3>
             </div>
             <span class="text-2xl bg-amber-50 p-3 rounded-lg text-amber-600">⏳</span>
@@ -99,7 +99,7 @@ const getInvoiceStatusBadge = (status) => {
                 Treatments Done
               </p>
               <h3 class="text-2xl font-bold text-blue-600 mt-1">
-                {{ stats.total_treatments }}
+                {{ status.total_treatments }}
               </h3>
             </div>
             <span class="text-2xl bg-blue-50 p-3 rounded-lg text-blue-600">🦷</span>
@@ -113,7 +113,7 @@ const getInvoiceStatusBadge = (status) => {
                 Remaining Balance
               </p>
               <h3 class="text-2xl font-bold text-rose-600 mt-1">
-                {{ formatCurrency(stats.remaining_balance, "ILS") }}
+                {{ formatCurrency(status.remaining_balance, "ILS") }}
               </h3>
             </div>
             <span class="text-2xl bg-rose-50 p-3 rounded-lg text-rose-600">💳</span>

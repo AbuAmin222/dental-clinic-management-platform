@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Patient;
 
+use App\Exceptions\BusinessRuleViolationException;
+use App\Factories\Telemetry\DashboardTelemetryFactory;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Receptionist\StoreAppointmentRequest;
+use App\Models\Appointment;
+use App\Models\Doctor;
 use App\Models\Invoice;
-use App\Models\Patient;
 use App\Services\Appointment\AppointmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -24,68 +27,92 @@ use Inertia\Response as InertiaResponse;
  */
 class PatientController extends Controller
 {
-    protected AppointmentService $bookingService;
-
     /**
      * PatientController constructor.
-     *
-     * @param AppointmentService $bookingService
      */
-    public function __construct(AppointmentService $bookingService)
-    {
-        $this->bookingService = $bookingService;
-    }
+    public function __construct(
+        protected readonly AppointmentService $bookingService
+    ) {}
 
     /**
      * Map aggregated telemetry profile statistics and structural invoices ledger.
+     *
+     * FIX (Coherence Audit): previously re-implemented the exact same query structure
+     * already built in PatientDashboardTelemetry (an orphaned class — no Factory or
+     * binding resolved it anywhere). Now delegates to it via DashboardTelemetryFactory,
+     * keeping the existing prop names ('patient', 'status') so the frontend contract
+     * is unaffected.
      *
      * @return InertiaResponse
      */
     public function index(): InertiaResponse
     {
-        $user = Auth::user();
-
-        $patientData = Patient::where('user_id', $user?->id)->with([
-            'appointments' => static function ($query): void {
-                $query->with(['doctor.user', 'invoices'])->latest();
-            },
-            'dentalRecords' => static function ($query): void {
-                $query->with(['doctor.user', 'appointment'])->latest();
-            },
-            'invoices' => static function ($query): void {
-                $query->with(['doctor.user', 'appointment'])->latest();
-            }
-        ])->first();
-
-        $stats = [
-            'total_appointments' => $patientData ? $patientData->appointments->count() : 0,
-        ];
+        $telemetry = DashboardTelemetryFactory::make('patient')->getTelemetry(Auth::user());
 
         return Inertia::render('Patient/Dashboard', [
-            'patient' => $patientData,
-            'stats'   => $stats,
+            'patient' => $telemetry['patient'],
+            'status'   => $telemetry['metrics'],
         ]);
     }
 
     /**
-     * Execute transactional appointment booking with strict validation.
+     * FIX (D9): render the self-service appointment booking form.
+     * This method was missing entirely, despite being wired to the
+     * `patient.appointment.create` route in PatientRouteRegistrar.
+     *
+     * @return InertiaResponse
+     */
+    public function createAppointment(): InertiaResponse
+    {
+        $this->authorize('create', Appointment::class);
+
+        $doctors = Doctor::join('users', 'doctors.user_id', '=', 'users.id')
+            ->leftJoin('specializations', 'doctors.specialization_id', '=', 'specializations.id')
+            ->select([
+                'doctors.id',
+                'users.first_name',
+                'users.last_name',
+                'specializations.name as specialization_name',
+            ])
+            ->get()
+            ->map(static fn($d): array => [
+                'id'             => $d->id,
+                'name'           => "Dr. {$d->first_name} {$d->last_name}",
+                'specialization' => $d->specialization_name ?? 'General Practice',
+            ]);
+
+        return Inertia::render('Patient/Appointments/Create', [
+            'doctors' => $doctors,
+        ]);
+    }
+
+    /**
+     * FIX (D9 + D10): execute transactional self-service appointment booking.
+     *
+     * This replaces the previous book() method, which was wired to no route at all
+     * (D9) and additionally passed the whole Patient model where AppointmentService
+     * expects an int patient ID, then treated its Appointment|throws return value as
+     * a boolean (D10). AppointmentService::bookAppointment() returns an Appointment
+     * on success or throws DomainException on conflict — it never returns false.
      *
      * @param StoreAppointmentRequest $request
      * @return RedirectResponse
      */
-    public function book(StoreAppointmentRequest $request): RedirectResponse
+    public function storeAppointment(StoreAppointmentRequest $request): RedirectResponse
     {
+        $this->authorize('create', Appointment::class);
+
         $patient = Auth::user()?->patient;
 
         if (!$patient) {
             abort(403, 'Unauthorized contextual boundary mapping missing.');
         }
 
-        $success = $this->bookingService->bookAppointment($request->validated(), $patient);
-
-        if (!$success) {
+        try {
+            $this->bookingService->bookAppointment($request->validated(), $patient->id);
+        } catch (BusinessRuleViolationException $e) {
             return back()->withErrors([
-                'start_time' => 'The selected time slot conflicts with an existing appointment for this doctor. Please choose a different time or date.'
+                'start_time' => $e->getMessage(),
             ]);
         }
 
@@ -97,12 +124,20 @@ class PatientController extends Controller
     /**
      * Hydrate centralized point-of-sale visualization terminals.
      *
+     * FIX: InvoicePolicy::pay() requires (User, Invoice, Appointment) — the previous call
+     * `Gate::authorize('pay', $invoice)` supplied only the Invoice, which would throw a
+     * TypeError before ever reaching the actual authorization logic.
+     *
      * @param Invoice $invoice
      * @return InertiaResponse
      */
     public function checkoutInvoice(Invoice $invoice): InertiaResponse
     {
-        Gate::authorize('pay', $invoice);
+        $appointment = $invoice->appointment;
+
+        abort_if($appointment === null, 404, 'This invoice has no linked appointment context.');
+
+        Gate::authorize('pay', [$invoice, $appointment]);
 
         return Inertia::render('Patient/InvoicePayment', [
             'invoice' => $invoice->load('doctor.user')

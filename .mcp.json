@@ -1,0 +1,39 @@
+{
+    "mcpServers": {
+        "filesystem": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-filesystem",
+                "."
+            ]
+        },
+        "mysql-database": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-mysql",
+                "mysql://root:root@127.0.0.1:3310/dental_clinic"
+            ]
+        },
+        "git-repository": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-git",
+                "--repository",
+                "C:\\Users\\Abu Amin\\Desktop\\Laravel-Projects\\Dental Clinic Application"
+            ]
+        },
+        "docker-artisan": {
+            "command": "docker",
+            "args": [
+                "exec",
+                "-i",
+                "dentalclinicapplication-app-1",
+                "php",
+                "artisan"
+            ]
+        }
+    }
+}

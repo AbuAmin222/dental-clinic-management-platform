@@ -9,3 +9,7 @@ storage/logs/*
 bootstrap/cache/*.php
 !bootstrap/cache/.gitignore
 Other/
+.mcp.json
+.vscode/mcp.json
+config.json
+Docs/

@@ -76,8 +76,8 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $appends = [
         'full_name',
-        'profile_photo_url',
-        'identity_photo_url',
+        'identity_photo_path',
+        'profile_photo_path',
     ];
 
     /**

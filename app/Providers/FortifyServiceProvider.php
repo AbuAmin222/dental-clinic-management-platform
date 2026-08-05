@@ -82,7 +82,11 @@ class FortifyServiceProvider extends ServiceProvider
         RateLimiter::for('login', static function (Request $request): Limit {
             // Unify credentials to extract a single clean lowercase lookup target irrespective of using email or username
             $loginValue = Str::transliterate(
-                Str::lower((string) ($request->input('email') ?? $request->input('login')))
+                Str::lower((string) (
+                    $request->input('email') ??
+                    $request->input('username') ??
+                    $request->input('login')
+                ))
             );
 
             return Limit::perMinute(5)->by($loginValue . '|' . $request->ip());
@@ -96,7 +100,11 @@ class FortifyServiceProvider extends ServiceProvider
 
         // Section 4: High-Performance Seamless Dual-Credential Authentication (Email or Username)
         Fortify::authenticateUsing(static function (Request $request): ?User {
-            $loginTarget = (string) ($request->input('email') ?? $request->input('login'));
+            $loginTarget = (string) (
+                $request->input('email') ??
+                $request->input('username') ??
+                $request->input('login')
+            );
 
             if (empty($loginTarget)) {
                 return null;

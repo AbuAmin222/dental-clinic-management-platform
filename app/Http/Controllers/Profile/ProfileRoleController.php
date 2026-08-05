@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Profile;
 
+use App\Factories\Validation\RoleValidationFactory;
 use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 /**
  * Class ProfileRoleController
@@ -40,7 +42,15 @@ class ProfileRoleController extends Controller
             return redirect()->back()->with('error', __('Unauthenticated request.'));
         }
 
-        $this->userService->updateUserProfile($user, $request->all());
+        $roleStrategy = RoleValidationFactory::make($user->role);
+
+        $validated = Validator::make(
+            $request->all(),
+            $roleStrategy->getUpdateRules($user, $request->all()),
+            $roleStrategy->messages()
+        )->validate();
+
+        $this->userService->updateUserProfile($user, $validated);
 
         return redirect()->back()->with('success', __('Professional clinical metadata synchronized perfectly.'));
     }
