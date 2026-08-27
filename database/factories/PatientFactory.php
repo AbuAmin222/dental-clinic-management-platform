@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\BloodGroup;
 use App\Models\Patient;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -20,15 +21,19 @@ class PatientFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory()->create(['role' => 'patient'])->id,
+            // 'user_id' => User::factory()->afterCreating(
+            //     fn(User $user) => $user->assignRole(UserRole::Patient->value, true)
+            // ),
 
-            'blood_group' => $this->faker->randomElement(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']),
+            'user_id' => User::factory()->patient()->create()->id,
+
+            'blood_group' => $this->faker->randomElement(BloodGroup::values()),
 
             'allergies' => $this->faker->optional()->sentence(),
             'chronic_diseases' => $this->faker->optional()->words(2, true),
 
             'emergency_contact_name' => $this->faker->name(),
-            'emergency_contact_phone' => $this->faker->phoneNumber(),
+            'emergency_contact_phone' => $this->faker->numerify('059#######'),
 
             'medical_notes' => $this->faker->optional()->paragraph(),
         ];

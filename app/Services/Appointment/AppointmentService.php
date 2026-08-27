@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Appointment;
 
+use App\Enums\AppointmentStatus;
 use App\Exceptions\BusinessRuleViolationException;
 use App\Models\Appointment;
 use App\Models\Doctor;
@@ -19,10 +20,11 @@ class AppointmentService
     /**
      * Default appointment duration applied when the caller does not supply an explicit
      * end_time (e.g. the patient self-booking flow, which only collects start_time).
-     *
-     * Business rule (confirmed, provisional): 30 minutes.
      */
-    private const DEFAULT_DURATION_MINUTES = 30;
+    private function defaultDurationMinutes(): int
+    {
+        return (int) config('clinic.appointments.default_duration_minutes', 30);
+    }
 
     /**
      * Book a new clinical appointment preventing schedule conflicts.
@@ -33,7 +35,6 @@ class AppointmentService
      */
     public function bookAppointment(array $data, int $patientId): Appointment
     {
-
         return DB::transaction(function () use ($data, $patientId) {
             Doctor::where('id', $data['doctor_id'])
                 ->lockForUpdate()
@@ -83,7 +84,7 @@ class AppointmentService
      */
     public function cancelAppointment(Appointment $appointment): bool
     {
-        return $appointment->update(['status' => 'cancelled']);
+        return $appointment->update(['status' => AppointmentStatus::Cancelled]);
     }
 
     protected function isOverlapping(array $data): bool
@@ -93,7 +94,7 @@ class AppointmentService
 
         $truthValue = Appointment::where('doctor_id', $data['doctor_id'])
             ->where('appointment_date', $data['appointment_date'])
-            ->where('status', '!=', 'cancelled')
+            ->where('status', '!=', AppointmentStatus::Cancelled)
             ->where(static function ($query) use ($startTime, $endTime): void {
                 $query->where('start_time', '<', $endTime)
                     ->where('end_time', '>', $startTime);
@@ -110,14 +111,16 @@ class AppointmentService
         $endTime = $this->resolveEndTime($data);
 
         $appointment = Appointment::create([
-            'patient_id'       => $data['patient_id'],
-            'doctor_id'        => $data['doctor_id'],
-            'appointment_date' => $date,
-            'start_time'       => $startTime,
-            'end_time'         => $endTime,
-            'reason_for_visit' => $data['reason_for_visit'] ?? null,
-            'doctor_notes'     => $data['doctor_notes'] ?? null,
-            'status'           => 'scheduled',
+            'patient_id'           => $data['patient_id'],
+            'doctor_id'            => $data['doctor_id'],
+            'treatment_course_id'  => $data['treatment_course_id'] ?? null,
+            'appointment_date'     => $date,
+            'start_time'           => $startTime,
+            'end_time'             => $endTime,
+            'duration_minutes'     => Carbon::parse($startTime)->diffInMinutes(Carbon::parse($endTime)),
+            'reason_for_visit'     => $data['reason_for_visit'] ?? null,
+            'doctor_notes'         => $data['doctor_notes'] ?? null,
+            'status'               => AppointmentStatus::Scheduled,
         ]);
         return $appointment;
     }
@@ -138,7 +141,7 @@ class AppointmentService
         }
 
         return Carbon::parse($data['start_time'])
-            ->addMinutes(self::DEFAULT_DURATION_MINUTES)
+            ->addMinutes($this->defaultDurationMinutes())
             ->format('H:i:s');
     }
 }

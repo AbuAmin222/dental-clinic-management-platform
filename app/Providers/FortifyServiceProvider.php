@@ -137,5 +137,20 @@ class FortifyServiceProvider extends ServiceProvider
                 'email' => (string) $request->query('email'),
             ]);
         });
+
+        Fortify::twoFactorChallengeView(static function (): InertiaResponse {
+            return Inertia::render('Auth/TwoFactorChallenge');
+        });
+        
+        Fortify::confirmPasswordView(static function (): InertiaResponse {
+            return Inertia::render('Auth/ConfirmPassword');
+        });
+
+        Fortify::verifyEmailView(static function (Request $request): InertiaResponse {
+            return Inertia::render('Auth/VerifyEmail', [
+                'status' => $request->session()->get('status'),
+            ]);
+        });
+
     }
 }

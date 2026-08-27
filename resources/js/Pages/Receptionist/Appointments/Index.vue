@@ -76,7 +76,7 @@
                 <option value="confirmed">Confirmed</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
-                <option value="no_show">No Show</option>
+                <option value="stopped">Stopped</option>
               </select>
             </div>
 
@@ -234,7 +234,7 @@
                           Confirm
                         </button>
                         <button
-                          @click="changeStatus(appt.id, 'no_show')"
+                          @click="changeStatus(appt.id, 'stopped')"
                           class="px-2.5 py-1 text-xs font-bold bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg transition-colors"
                         >
                           No Show
@@ -247,7 +247,7 @@
                         </button>
                       </template>
 
-                      <!-- (confirmed) =>Shown=> (completed, pending, no_show) -->
+                      <!-- (confirmed) =>Shown=> (completed, pending, stopped) -->
                       <template v-if="appt.status === 'confirmed'">
                         <button
                           @click="changeStatus(appt.id, 'completed')"
@@ -262,7 +262,7 @@
                           Schedule
                         </button>
                         <button
-                          @click="changeStatus(appt.id, 'no_show')"
+                          @click="changeStatus(appt.id, 'stopped')"
                           class="px-2.5 py-1 text-xs font-bold bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg transition-colors"
                         >
                           No Show
@@ -283,7 +283,7 @@
                           Complete Session
                         </button>
                         <button
-                          @click="changeStatus(appt.id, 'no_show')"
+                          @click="changeStatus(appt.id, 'stopped')"
                           class="px-2.5 py-1 text-xs font-bold bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg transition-colors"
                         >
                           No Show
@@ -296,7 +296,7 @@
                         </button>
                       </template>
 
-                      <template v-if="appt.status === 'no_show'">
+                      <template v-if="appt.status === 'stopped'">
                         <button
                           @click="changeStatus(appt.id, 'pending')"
                           class="px-2.5 py-1 text-xs font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg transition-colors"
@@ -427,7 +427,7 @@ const getStatusClass = (status) => {
       return "bg-green-50 text-green-700 border border-green-100";
     case "cancelled":
       return "bg-red-50 text-red-700 border border-red-100";
-    case "no_show":
+    case "stopped":
       return "bg-amber-50 text-amber-700 border border-amber-100";
     default:
       return "bg-gray-50 text-gray-700";

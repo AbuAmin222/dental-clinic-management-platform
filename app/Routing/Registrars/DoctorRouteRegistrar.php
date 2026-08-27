@@ -14,6 +14,11 @@ use App\Http\Controllers\Doctor\DashboardController;
 
 class DoctorRouteRegistrar extends BaseRoleRouteRegistrar
 {
+    public function additionalMiddleware(): array
+    {
+        return ['onboarding.completed'];
+    }
+
     protected function dashboardAction(): array
     {
         return [DashboardController::class, 'index'];

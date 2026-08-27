@@ -3,9 +3,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
+    image: ${DOCKER_IMAGE_REPOSITORY:-ghcr.io/local/dental-clinic}/clinic-app:${IMAGE_TAG:-latest}
     restart: always
     ports:
-      - "8010:80"
+      - "${APP_PORT:-8010}:80"
+      # - "8010:80"
     volumes:
       - dental-storage-data:/var/www/storage
     env_file:
@@ -20,8 +23,11 @@ services:
       DB_USERNAME: ${DB_USERNAME:-root}
       DB_PASSWORD: ${DB_PASSWORD}
       CACHE_STORE: redis
-      QUEUE_CONNECTION: redis
       SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
     depends_on:
       mysql:
         condition: service_healthy
@@ -33,13 +39,13 @@ services:
     restart: always
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-dental_clinic}
-      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_USER: ${DB_USERNAME:-root}
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     volumes:
       - dental-mysql-data:/var/lib/mysql
     ports:
-      - "3310:3306"
+      - "${DB_FORWARD_PORT:-3310}:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
@@ -50,7 +56,7 @@ services:
     image: redis:7-alpine
     restart: always
     ports:
-      - "6380:6379"
+      - "${REDIS_FORWARD_PORT:-6380}:6379"
     volumes:
       - dental-redis-data:/data
     healthcheck:

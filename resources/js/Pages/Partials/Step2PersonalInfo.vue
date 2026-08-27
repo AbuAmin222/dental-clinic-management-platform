@@ -197,10 +197,16 @@ defineProps({
 
     <!-- Gender -->
     <div class="m-4">
-      <InputLabel value="gender" class="mb-2" />
-      <div class="grid grid-cols-2 gap-4">
+      <InputLabel id="gender-group-label" value="Gender" class="mb-2" />
+      <div
+        class="grid grid-cols-2 gap-4"
+        role="radiogroup"
+        aria-labelledby="gender-group-label"
+      >
         <button
           type="button"
+          role="radio"
+          :aria-checked="form.gender === 'Male'"
           @click="form.gender = 'Male'"
           :class="{
             'border-blue-500 bg-blue-50 ring-2 ring-blue-200': form.gender === 'Male',
@@ -226,6 +232,8 @@ defineProps({
 
         <button
           type="button"
+          role="radio"
+          :aria-checked="form.gender === 'Female'"
           @click="form.gender = 'Female'"
           :class="{
             'border-pink-500 bg-pink-50 ring-2 ring-pink-200': form.gender === 'Female',

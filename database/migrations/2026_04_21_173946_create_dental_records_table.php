@@ -16,7 +16,7 @@ return new class extends Migration
 
             $table->foreignId('doctor_id')->constrained('doctors')->restrictOnDelete();
             $table->foreignId('patient_id')->constrained('patients')->restrictOnDelete();
-            $table->foreignId('appointment_id')->nullable()->constrained('appointments')->nullOnDelete();
+            $table->foreignId('appointment_id')->unique()->constrained('appointments')->restrictOnDelete();
 
             $table->string('tooth_number')->nullable();
             $table->string('condition_type');

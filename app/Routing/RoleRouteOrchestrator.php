@@ -16,6 +16,8 @@ class RoleRouteOrchestrator
         \App\Routing\Registrars\ReceptionistRouteRegistrar::class,
         \App\Routing\Registrars\DoctorRouteRegistrar::class,
         \App\Routing\Registrars\PatientRouteRegistrar::class,
+        \App\Routing\Registrars\FinancialRouteRegistrar::class,
+        \App\Routing\Registrars\AdminRouteRegistrar::class,
     ];
 
     /**
@@ -28,7 +30,7 @@ class RoleRouteOrchestrator
             $roleKey = $registrar->getRoleKey();
 
             // Intercept routing registry and bind framework components systematically
-            $router->middleware(["role:{$roleKey}"])
+            $router->middleware(["role:{$roleKey}", ...$registrar->additionalMiddleware()])
                 ->prefix($roleKey)
                 ->name("{$roleKey}.")
                 ->group(static function (Router $subRouter) use ($registrar): void {

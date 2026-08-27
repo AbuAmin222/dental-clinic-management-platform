@@ -11,17 +11,6 @@ class UpdateDentalRecordRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * FIX (Coherence Audit): DentalRecordPolicy::update() requires
-     * (User, DentalRecord, Appointment) — the previous call `$user->can('update', $dentalRecord)`
-     * supplied only the DentalRecord, which would throw a TypeError as soon as the Policy
-     * method was invoked. The linked Appointment is now resolved via the DentalRecord's own
-     * relationship and passed explicitly.
-     *
-     * Note: no route currently wires this FormRequest to any Controller (DentalRecordController
-     * only implements create()/store() — there is no update route registered in
-     * DoctorRouteRegistrar). This fix keeps the class correct and ready for when an update
-     * flow is added, without inventing a route that does not exist yet.
      */
     public function authorize(): bool
     {
@@ -48,11 +37,16 @@ class UpdateDentalRecordRequest extends FormRequest
      */
     public function rules(): array
     {
+        $toothMin = (int) config('clinic.dental_chart.tooth_number_min', 1);
+        $toothMax = (int) config('clinic.dental_chart.tooth_number_max', 32);
+        $xrayMimes = implode(',', config('clinic.uploads.xray.mimes', ['jpeg', 'png', 'jpg', 'webp']));
+        $xrayMaxKb = (int) config('clinic.uploads.xray.max_kb', 5120);
+
         return [
-            'tooth_number'   => ['nullable', 'integer', 'between:1,32'],
+            'tooth_number'   => ['nullable', 'integer', "between:{$toothMin},{$toothMax}"],
             'condition_type' => ['required', 'string', 'max:100'],
             'description'    => ['nullable', 'string', 'max:2000'],
-            'xray_image'     => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'xray_image'     => ['nullable', 'image', "mimes:{$xrayMimes}", "max:{$xrayMaxKb}"],
         ];
     }
 

@@ -1,20 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use App\Enums\AppointmentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Appointment extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'doctor_id',
         'patient_id',
+        'treatment_course_id',
         'appointment_date',
         'start_time',
         'end_time',
+        'duration_minutes',
         'status',
         'reason_for_visit',
         'doctor_notes',
@@ -22,6 +29,8 @@ class Appointment extends Model
 
     protected $casts = [
         'appointment_date' => 'date',
+        'duration_minutes' => 'integer',
+        'status'           => AppointmentStatus::class,
     ];
 
     public function doctor(): BelongsTo
@@ -36,15 +45,20 @@ class Appointment extends Model
             $this->belongsTo(Patient::class);
     }
 
-    public function invoices(): HasMany
+    public function invoice(): HasOne
     {
-        return
-            $this->hasMany(Invoice::class);
+        return $this->hasOne(Invoice::class);
     }
 
     public function dentalRecord(): HasOne
     {
         return
             $this->hasOne(DentalRecord::class);
+    }
+
+    public function treatmentCourse(): BelongsTo
+    {
+        return
+            $this->belongsTo(TreatmentCourse::class);
     }
 }

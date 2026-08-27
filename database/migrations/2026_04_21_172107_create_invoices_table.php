@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\InvoiceStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -16,13 +17,22 @@ return new class extends Migration
 
             $table->foreignId('doctor_id')->constrained('doctors')->restrictOnDelete();
             $table->foreignId('patient_id')->constrained('patients')->restrictOnDelete();
-            $table->foreignId('appointment_id')->nullable()->constrained('appointments')->nullOnDelete();
+            $table->foreignId('appointment_id')->nullable()->unique()->constrained('appointments')->nullOnDelete();
 
-            $table->decimal('total_amount', 10, 2);
-            $table->decimal('paid_amount', 10, 2)->default(0);
-            $table->decimal('balance_amount', 10, 2)->default(0);
+            $table->unsignedBigInteger('sub_total')->default(0);
+            $table->unsignedBigInteger('tax_amount')->default(0);
+            $table->unsignedBigInteger('discount_amount')->default(0);
+            $table->unsignedBigInteger('total_amount')->default(0);
+            $table->unsignedBigInteger('paid_amount')->default(0);
+            $table->unsignedBigInteger('due_amount')->default(0);
+            $table->unsignedBigInteger('balance_amount')->default(0);
 
-            $table->enum('status', ['unpaid', 'partially_paid', 'paid'])->default('unpaid');
+
+            $table->enum('status', InvoiceStatus::values())->default(InvoiceStatus::Draft->value);
+
+            $table->index(['patient_id', 'status']);
+
+            $table->softDeletes();
 
             $table->timestamp('due_date')->nullable();
 

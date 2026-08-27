@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Dashboard;
 
 use App\Contracts\Telemetry\DashboardTelemetryInterface;
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\User;
@@ -31,10 +32,10 @@ class DoctorDashboardTelemetry implements DashboardTelemetryInterface
             'metrics' => [
                 'today_appointments' => Appointment::where('doctor_id', $doctor->id)
                     ->where('appointment_date', today()->toDateString())
-                    ->where('status', 'confirmed')
+                    ->where('status', AppointmentStatus::Confirmed)
                     ->count(),
                 'total_consultations' => Appointment::where('doctor_id', $doctor->id)
-                    ->where('status', 'completed')
+                    ->where('status', AppointmentStatus::Completed)
                     ->count(),
             ],
             'view_path' => 'Doctor/Dashboard'

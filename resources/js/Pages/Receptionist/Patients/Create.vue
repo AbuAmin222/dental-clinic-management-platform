@@ -1,379 +1,269 @@
 <script setup>
-import InputError from "@/Components/InputError.vue";
-import InputLabel from "@/Components/InputLabel.vue";
-import TextInput from "@/Components/TextInput.vue";
-import { computed } from "vue";
+import { onMounted, ref } from "vue";
+import AppLayout from "@/Layouts/AppLayout.vue";
+import FormSection from "@/Components/FormSection.vue";
+import PrimaryButton from "@/Components/PrimaryButton.vue";
+import ActionMessage from "@/Components/ActionMessage.vue";
+import { useRegisterForm } from "@/Composables";
+import axios from "axios";
 
-const props = defineProps({
-  form: Object,
-  patterns: Object,
-  isPasswordSecure: Boolean,
-  isPasswordMatched: Boolean,
-  isPassword: Boolean,
-  checkEmailRealTime: Function,
-  emailStatus: Object,
+import Step2PersonalInfo from "@/Pages/Partials/Step2PersonalInfo.vue";
+import Step3ContactInfo from "@/Pages/Partials/Step3ContactInfo.vue";
+import RoleSpecificFields from "@/Pages/Partials/RoleSpecificFields.vue";
+
+const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+const today = new Date().toISOString().split("T")[0];
+
+const {
+  form,
+  step,
+  patterns,
+  filterNumbers,
+  isValidDate,
+  isDateOverride,
+  calculateAge,
+  submit,
+} = useRegisterForm();
+
+const isPassword = false;
+
+onMounted(() => {
+  form.role = "patient";
+  step.value = 2;
 });
 
-// --- لوحة التحقق الفورية لكلمة المرور (Real-time Password Criteria Validation) ---
-const passwordCriteria = computed(() => {
-  const pwd = props.form.password || "";
-  return [
-    { id: "length", label: "At least 8 characters long", met: pwd.length >= 8 },
-    { id: "upper", label: "Contains an uppercase letter (A-Z)", met: /[A-Z]/.test(pwd) },
-    { id: "lower", label: "Contains a lowercase letter (a-z)", met: /[a-z]/.test(pwd) },
-    { id: "number", label: "Contains at least one number (0-9)", met: /\d/.test(pwd) },
-    {
-      id: "special",
-      label: "Contains a special character (@, $, !, %, *, etc.)",
-      met: /[@$!%*?&]/.test(pwd),
-    },
-  ];
-});
+const passwordMaker = () => {
+  form.password = form.identity_number;
+  form.password_confirmation = form.password;
+};
 
-// احتساب النسبة المئوية لقوة كلمة المرور ديناميكياً
-const passwordStrengthPercentage = computed(() => {
-  const passedRules = passwordCriteria.value.filter((c) => c.met).length;
-  return (passedRules / passwordCriteria.value.length) * 100;
-});
+// 1. تعريف حالة اسم المستخدم الافتراضية
+const usernameStatus = ref({ loading: false, valid: null, message: "" });
+let usernameTimeout = null;
+
+// 2. دالة الفحص الذكية المعتمدة على الـ Debounce
+const checkUsernameRealTime = (username) => {
+  // إلغاء الفحص القديم إذا استمر المستخدم بالكتابة بسرعة
+  clearTimeout(usernameTimeout);
+
+  if (username.length < 3) {
+    usernameStatus.value = { loading: false, valid: null, message: "" };
+    return;
+  }
+
+  usernameStatus.value.loading = true;
+
+  // الانتظار لمدة 500 مللي ثانية بعد توقف المستخدم عن الكتابة قبل إرسال الطلب للسيرفر
+  usernameTimeout = setTimeout(async () => {
+    try {
+      const response = await axios.post(route("check-username"), {
+        username: username,
+      });
+      usernameStatus.value = {
+        loading: false,
+        valid: response.data.valid,
+        message: response.data.message,
+      };
+    } catch (error) {
+      usernameStatus.value = {
+        loading: false,
+        valid: false,
+        message: "Error checking username.",
+      };
+    }
+  }, 500);
+};
+
+const handleStore = () => {
+  passwordMaker();
+  submit("receptionist.patients.store", false);
+};
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div class="text-center">
-      <h3 class="text-xl font-bold text-slate-800 tracking-tight">Contact Information</h3>
-      <p class="text-xs text-slate-500 mt-1">
-        Please provide valid credentials for your corporate profile.
-      </p>
-    </div>
-
-    <!-- High Professional Username Field -->
-    <div class="m-4">
-      <InputLabel
-        for="username"
-        value="Username"
-        class="text-slate-700 font-semibold mb-2 text-xs uppercase tracking-wider"
-      />
-      <div class="relative mt-1">
-        <TextInput
-          id="username"
-          v-model="form.username"
-          type="text"
-          maxlength="25"
-          @input="form.username = form.username.replace(/[^a-zA-Z0-9_]/g, '')"
-          class="block w-full !rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition shadow-sm text-sm py-2.5 px-3 text-slate-800 font-mono tracking-wide"
-          :class="{
-            'border-emerald-500 focus:ring-emerald-500':
-              form.username && form.username.length >= 3,
-            'border-red-500 focus:ring-red-500':
-              form.username && form.username.length < 3,
-          }"
-          placeholder="only_letters_numbers_or_underscore"
-          required
-        />
-
-        <!-- أيقونات الحالة لاسم المستخدم للـ Scalability البصرية -->
-        <div
-          class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"
-        >
-          <svg
-            v-if="form.username && form.username.length >= 3"
-            class="h-5 w-5 text-emerald-500"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-              clip-rule="evenodd"
-            />
-          </svg>
-          <svg
-            v-if="form.username && form.username.length < 3"
-            class="h-5 w-5 text-red-500"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </div>
-      </div>
-
-      <!-- شريط معلومات العداد والقيود السفلية للمدخل المعزول -->
-      <div class="flex justify-between items-center mt-1.5">
-        <p
-          v-if="form.username && form.username.length < 3"
-          class="text-xs font-semibold text-red-500"
-        >
-          ✕ Username must be at least 3 characters.
-        </p>
-        <p v-else class="text-[11px] font-medium text-slate-400">
-          Allowed: A-Z, 0-9, and underscore (_). No dashes, slashes, or spaces.
-        </p>
-        <span
-          class="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded tracking-wider"
-        >
-          {{ form.username ? form.username.length : 0 }}/25
-        </span>
-      </div>
-      <InputError class="mt-2" :message="form.errors.username" />
-    </div>
-
-    <!-- Corporate Email Address -->
-    <div class="m-4">
-      <InputLabel
-        for="email"
-        value="Corporate Email Address"
-        class="text-slate-700 font-semibold mb-2 text-xs uppercase tracking-wider"
-      />
-      <div class="relative mt-1">
-        <TextInput
-          id="email"
-          type="email"
-          @input="checkEmailRealTime ? checkEmailRealTime($event.target.value) : null"
-          v-model="form.email"
-          placeholder="name@company.com"
-          class="block w-full !rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition shadow-sm text-sm py-2.5 px-3 text-slate-800"
-          :class="{
-            'border-emerald-500 focus:ring-emerald-500': patterns.email.test(form.email),
-            'border-red-500 focus:ring-red-500':
-              form.email && !patterns.email.test(form.email),
-          }"
-          required
-        />
-
-        <div
-          class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"
-        >
-          <!-- ⚡ تم تأمين كافة الاستدعاءات بـ Optional Chaining مكرر لمنع الانهيار تماماً -->
-          <svg
-            v-if="emailStatus?.loading"
-            class="animate-spin h-4 w-4 text-indigo-500"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            ></circle>
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          <svg
-            v-if="emailStatus?.valid === true && !emailStatus?.loading"
-            class="h-5 w-5 text-emerald-500"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-              clip-rule="evenodd"
-            />
-          </svg>
-          <svg
-            v-if="emailStatus?.valid === false && !emailStatus?.loading"
-            class="h-5 w-5 text-red-500"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </div>
-      </div>
-
-      <p
-        v-if="emailStatus?.message"
-        :class="emailStatus?.valid ? 'text-emerald-600' : 'text-red-500'"
-        class="mt-2 text-xs font-semibold tracking-wide"
-      >
-        {{ emailStatus?.message }}
-      </p>
-      <InputError class="mt-2" :message="form.errors.email" />
-    </div>
-
-    <!-- Enhanced Secure Password Field -->
-    <div class="m-4" v-if="isPassword">
-      <InputLabel
-        for="password"
-        value="Password"
-        class="text-slate-700 font-semibold mb-2 text-xs uppercase tracking-wider"
-      />
-      <TextInput
-        id="password"
-        type="password"
-        v-model="form.password"
-        class="block w-full !rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition shadow-sm text-sm py-2.5 px-3 text-slate-800"
-        :class="{
-          'border-emerald-500 focus:ring-emerald-500': isPasswordSecure,
-          'border-red-500 focus:ring-red-500': form.password && !isPasswordSecure,
-        }"
-        required
-      />
-
-      <!-- Dynamic Smooth Progress Bar -->
-      <div
-        class="mt-3 bg-slate-100 rounded-full h-1.5 overflow-hidden w-full transition-all"
-      >
-        <div
-          class="h-full rounded-full transition-all duration-500"
-          :style="{ width: `${passwordStrengthPercentage}%` }"
-          :class="[
-            passwordStrengthPercentage < 40
-              ? 'bg-red-500'
-              : passwordStrengthPercentage < 80
-              ? 'bg-amber-500'
-              : 'bg-emerald-500',
-          ]"
-        ></div>
-      </div>
-
-      <!-- High Professional Criteria Checklist Container -->
-      <div class="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
-        <p class="text-[11px] uppercase tracking-wider font-bold text-slate-500 mb-2">
-          Password Security Checklist:
-        </p>
-
-        <div
-          v-for="criteria in passwordCriteria"
-          :key="criteria.id"
-          class="flex items-center gap-2.5 text-xs transition-all duration-300"
-        >
-          <!-- ⚡ حماية طول الكلمة بـ form.password?.length منعاً لـ TypeError أخرى -->
+  <AppLayout title="Insert New Patient">
+    <template #header>
+      <div class="flex items-center justify-between py-1">
+        <div class="space-y-1">
           <div
-            class="flex items-center justify-center w-4 h-4 rounded-full border transition-all"
-            :class="[
-              criteria.met
-                ? 'bg-emerald-500 border-emerald-500 text-white'
-                : form.password?.length > 0
-                ? 'bg-red-50 border-red-200 text-red-500 animate-pulse'
-                : 'bg-white border-slate-300 text-slate-400',
-            ]"
+            class="flex items-center space-x-2 text-xs font-medium text-slate-400 tracking-wider uppercase"
           >
-            <span class="text-[10px] font-bold">{{ criteria.met ? "✓" : "✕" }}</span>
+            <span>Reception Desk</span>
+            <span class="text-slate-300">/</span>
+            <span class="text-indigo-600 font-semibold">Intake Portal</span>
           </div>
-          <span
-            class="font-medium transition-colors"
-            :class="[
-              criteria.met
-                ? 'text-emerald-600 line-through opacity-70'
-                : form.password?.length > 0
-                ? 'text-red-600 font-semibold'
-                : 'text-slate-500',
-            ]"
+          <h2 class="text-2xl font-bold text-slate-950 tracking-tight sm:text-3xl">
+            Patient Intake Registration
+          </h2>
+        </div>
+      </div>
+    </template>
+
+    <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
+      <FormSection @submitted="handleStore">
+        <template #title>
+          <div class="text-slate-900 font-bold text-lg tracking-tight">
+            Clinical Records Initiation
+          </div>
+        </template>
+
+        <template #description>
+          <div class="text-sm text-slate-500 leading-relaxed space-y-4 mt-2">
+            <p>
+              Initialize a secure, permanent electronic health record (EHR) by entering
+              authenticated personal, contact, and clinical metrics.
+            </p>
+
+            <div
+              class="relative overflow-hidden rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/40 to-slate-50 p-4 shadow-sm"
+            >
+              <div class="flex items-start space-x-3">
+                <svg
+                  class="h-5 w-5 text-indigo-600 mt-0.5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  />
+                </svg>
+                <div class="space-y-1">
+                  <h5 class="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                    Identity Verification Required
+                  </h5>
+                  <p class="text-xs text-slate-500 leading-normal">
+                    Cross-reference official state identification documents to confirm the
+                    accuracy of both the
+                    <span class="font-semibold text-slate-800">Identity Number</span> and
+                    <span class="font-semibold text-slate-800">Date of Birth</span> before
+                    finalizing execution.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template #form>
+          <div class="col-span-6 mb-2">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div class="flex items-center space-x-2.5">
+                <span class="inline-block w-1 h-5 rounded-full bg-indigo-600"></span>
+                <h4 class="text-sm font-bold uppercase tracking-wider text-slate-800">
+                  Primary Identification
+                </h4>
+              </div>
+              <span
+                class="text-xs font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100"
+                >Step 1 of 3</span
+              >
+            </div>
+          </div>
+
+          <div
+            class="col-span-6 bg-white border border-slate-100 p-5 rounded-2xl shadow-sm shadow-slate-100/40 mb-6"
           >
-            {{ criteria.label }}
-          </span>
-        </div>
-      </div>
+            <Step2PersonalInfo
+              :form="form"
+              :patterns="patterns"
+              :today="today"
+              :calculateAge="calculateAge"
+              :isValidDate="isValidDate"
+              :isDateOverride="isDateOverride"
+            />
+          </div>
 
-      <InputError class="mt-2" :message="form.errors.password" />
-    </div>
+          <div class="col-span-6 mb-2 pt-2">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div class="flex items-center space-x-2.5">
+                <span class="inline-block w-1 h-5 rounded-full bg-indigo-600"></span>
+                <h4 class="text-sm font-bold uppercase tracking-wider text-slate-800">
+                  Communications & Demographics
+                </h4>
+              </div>
+              <span
+                class="text-xs font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100"
+                >Step 2 of 3</span
+              >
+            </div>
+          </div>
 
-    <!-- Confirmation Password -->
-    <div class="m-4" v-if="isPassword">
-      <InputLabel
-        for="password_confirmation"
-        value="Confirm Password"
-        class="text-slate-700 font-semibold mb-2 text-xs uppercase tracking-wider"
-      />
-      <TextInput
-        id="password_confirmation"
-        type="password"
-        v-model="form.password_confirmation"
-        class="block w-full !rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition shadow-sm text-sm py-2.5 px-3 text-slate-800"
-        :class="{
-          'border-emerald-500 focus:ring-emerald-500':
-            isPasswordMatched && form.password_confirmation,
-          'border-red-500 focus:ring-red-500':
-            form.password_confirmation && !isPasswordMatched,
-        }"
-        required
-        autocomplete="new-password"
-      />
-      <p
-        v-if="form.password && form.password_confirmation && !isPasswordMatched"
-        class="text-xs font-semibold text-red-500 mt-1.5"
-      >
-        ✕ Passwords do not match.
-      </p>
-      <InputError class="mt-2" :message="form.errors.password_confirmation" />
-    </div>
+          <div
+            class="col-span-6 bg-white border border-slate-100 p-5 rounded-2xl shadow-sm shadow-slate-100/40 mb-6"
+          >
+            <Step3ContactInfo
+              :form="form"
+              :patterns="patterns"
+              :isPassword="isPassword"
+              :username-status="usernameStatus"
+              :check-username-real-time="checkUsernameRealTime"
+            />
+          </div>
 
-    <!-- Phone Number -->
-    <div class="m-4">
-      <InputLabel
-        for="phone"
-        value="Phone"
-        class="text-slate-700 font-semibold mb-2 text-xs uppercase tracking-wider"
-      />
-      <div class="relative mt-1">
-        <TextInput
-          id="phone"
-          v-model="form.phone"
-          maxlength="10"
-          class="block w-full pl-12 !rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition text-sm py-2.5 text-slate-800"
-          :class="{ 'border-emerald-500': patterns.phone.test(form.phone) }"
-          placeholder="0590000000"
-        />
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <span class="text-slate-400 sm:text-sm border-r pr-2">+97</span>
-        </div>
-      </div>
-      <p
-        v-if="form.phone && !patterns.phone.test(form.phone)"
-        class="text-[11px] text-red-500 mt-1 font-medium"
-      >
-        Format: 059 or 056 followed by 7 digits.
-      </p>
-      <p
-        v-if="form.phone && !patterns.onlyNumber.test(form.phone)"
-        class="text-[11px] text-red-500 mt-1 font-medium"
-      >
-        Invalid input, must be numbers only.
-      </p>
-      <InputError class="mt-2" :message="form.errors.phone" />
-    </div>
+          <div class="col-span-6 mb-2 pt-2">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div class="flex items-center space-x-2.5">
+                <span class="inline-block w-1 h-5 rounded-full bg-indigo-600"></span>
+                <h4 class="text-sm font-bold uppercase tracking-wider text-slate-800">
+                  Clinical Specifications
+                </h4>
+              </div>
+              <span
+                class="text-xs font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100"
+                >Step 3 of 3</span
+              >
+            </div>
+          </div>
 
-    <!-- Address -->
-    <div class="m-4">
-      <InputLabel
-        for="address"
-        value="Full Address"
-        class="text-slate-700 font-semibold mb-2 text-xs uppercase tracking-wider"
-      />
-      <textarea
-        id="address"
-        v-model="form.address"
-        class="mt-1 block w-full border-slate-200 rounded-xl shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 transition-all text-sm p-3 text-slate-800"
-        :class="{ 'border-emerald-500': form.address && form.address.length > 5 }"
-        rows="2"
-        placeholder="City, Street, Building No."
-      ></textarea>
-      <div class="flex justify-end mt-1">
-        <span class="text-[10px] font-semibold text-slate-400 tracking-wide">
-          {{ form.address ? form.address.length : 0 }} characters
-        </span>
-      </div>
-      <InputError class="mt-2" :message="form.errors.address" />
+          <div
+            class="col-span-6 bg-white border border-slate-100 p-5 rounded-2xl shadow-sm shadow-slate-100/40"
+          >
+            <RoleSpecificFields
+              :form="form"
+              :patterns="patterns"
+              :filterNumbers="filterNumbers"
+              :bloodGroups="bloodGroups"
+            />
+          </div>
+        </template>
+
+        <template #actions>
+          <ActionMessage
+            :on="form.recentlySuccessful"
+            class="me-4 text-emerald-600 font-semibold flex items-center text-sm"
+          >
+            <svg
+              class="w-5 h-5 me-2 text-emerald-500"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
+            </svg>
+            Record successfully committed.
+          </ActionMessage>
+
+          <PrimaryButton
+            :class="{ 'opacity-40 pointer-events-none': form.processing }"
+            :disabled="form.processing"
+            class="shadow-md shadow-indigo-100 hover:shadow-lg transition-all duration-200 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-sm font-semibold tracking-wide rounded-xl text-white"
+          >
+            <span v-if="form.processing" class="flex items-center space-x-2">
+              <span class="animate-pulse">Processing Record...</span>
+            </span>
+            <span v-else>Register Profile</span>
+          </PrimaryButton>
+        </template>
+      </FormSection>
     </div>
-  </div>
+  </AppLayout>
 </template>

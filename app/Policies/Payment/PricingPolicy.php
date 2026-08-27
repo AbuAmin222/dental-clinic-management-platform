@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Payment;
 
+use App\Enums\UserRole;
 use App\Factories\Authorization\PricingAuthorizationFactory;
 use App\Models\Pricing;
 use App\Models\User;
@@ -22,12 +23,12 @@ class PricingPolicy
     /**
      * Roles allowed to inspect clinical procedure catalogs.
      */
-    private const ALLOWED_VIEW_ANY_ROLES = ['doctor', 'patient', 'receptionist'];
+    private const ALLOWED_VIEW_ANY_ROLES = [UserRole::Doctor->value, UserRole::Patient->value, UserRole::Receptionist->value];
 
     /**
      * Roles allowed read-only access to specific price cards without dynamic check requirements.
      */
-    private const ALLOWED_READ_ONLY_ROLES = ['patient', 'receptionist'];
+    private const ALLOWED_READ_ONLY_ROLES = [UserRole::Patient->value, UserRole::Receptionist->value];
 
     /**
      * Determine whether the user can read the catalogs listing corporate treatment pricing schemas.
@@ -37,7 +38,7 @@ class PricingPolicy
      */
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, self::ALLOWED_VIEW_ANY_ROLES, true);
+        return $user->hasRole(self::ALLOWED_VIEW_ANY_ROLES);
     }
 
     /**
@@ -49,11 +50,11 @@ class PricingPolicy
      */
     public function view(User $user, Pricing $pricing): bool
     {
-        if ($user->role === 'doctor') {
+        if ($user->hasRole(UserRole::Doctor->value)) {
             return $this->delegateToStrategy($user, $pricing);;
         }
 
-        return in_array($user->role, self::ALLOWED_READ_ONLY_ROLES, true);
+        return $user->hasRole(self::ALLOWED_READ_ONLY_ROLES);
     }
 
     /**
@@ -64,7 +65,7 @@ class PricingPolicy
      */
     public function create(User $user): bool
     {
-        return $user->role === 'doctor';
+        return $user->hasRole(UserRole::Doctor->value);
     }
 
     /**
@@ -76,7 +77,7 @@ class PricingPolicy
      */
     public function update(User $user, Pricing $pricing): bool
     {
-        return $user->role === 'doctor' && $this->delegateToStrategy($user, $pricing);
+        return $user->hasRole(UserRole::Doctor->value) && $this->delegateToStrategy($user, $pricing);
     }
 
     /**
@@ -88,7 +89,7 @@ class PricingPolicy
      */
     public function delete(User $user, Pricing $pricing): bool
     {
-        return $user->role === 'doctor' && $this->delegateToStrategy($user, $pricing);
+        return $user->hasRole(UserRole::Doctor->value) && $this->delegateToStrategy($user, $pricing);
     }
 
     /**
@@ -100,7 +101,7 @@ class PricingPolicy
      */
     public function restore(User $user, Pricing $pricing): bool
     {
-        return $user->role === 'doctor' && $this->delegateToStrategy($user, $pricing);
+        return $user->hasRole(UserRole::Doctor->value) && $this->delegateToStrategy($user, $pricing);
     }
 
     /**

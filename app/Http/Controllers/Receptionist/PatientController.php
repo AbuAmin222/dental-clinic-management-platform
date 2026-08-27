@@ -19,17 +19,14 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Class PatientController
  *
- * FIX (2026-08-04): this Controller previously had zero model-level authorization -- every
- * action relied solely on the `role:receptionist` route middleware, unlike every other
- * clinical/financial Controller in the project. Now wired to the newly-created PatientPolicy.
- *
  * @package App\Http\Controllers\Receptionist
  */
 class PatientController extends Controller
 {
     public function index(Request $request): InertiaResponse
     {
-        $this->authorize('viewAny', Patient::class);
+        $status = $this->authorize('viewAny', Patient::class);
+        // trace_reach('PatientController@index - auth', $status);
 
         $searchTerm = $request->input('search');
 
@@ -44,7 +41,7 @@ class PatientController extends Controller
                 });
             })
             ->latest()
-            ->paginate(15)
+            ->paginate((int) config('clinic.pagination.default', 15))
             ->withQueryString();
 
         return Inertia::render('Receptionist/Patients/Index', [

@@ -81,18 +81,13 @@ class PatientController extends Controller
                 'specialization' => $d->specialization_name ?? 'General Practice',
             ]);
 
-        return Inertia::render('Patient/Appointments/Create', [
+        return Inertia::render('Patient/Appointment/Create', [
             'doctors' => $doctors,
         ]);
     }
 
     /**
-     * FIX (D9 + D10): execute transactional self-service appointment booking.
-     *
-     * This replaces the previous book() method, which was wired to no route at all
-     * (D9) and additionally passed the whole Patient model where AppointmentService
-     * expects an int patient ID, then treated its Appointment|throws return value as
-     * a boolean (D10). AppointmentService::bookAppointment() returns an Appointment
+     * AppointmentService::bookAppointment() returns an Appointment
      * on success or throws DomainException on conflict — it never returns false.
      *
      * @param StoreAppointmentRequest $request

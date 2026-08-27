@@ -12,6 +12,10 @@ use Illuminate\Routing\Router;
 
 class PatientRouteRegistrar extends BaseRoleRouteRegistrar
 {
+    public function additionalMiddleware(): array
+    {
+        return ['onboarding.completed'];
+    }
 
     protected function dashboardAction(): array
     {

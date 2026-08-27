@@ -34,7 +34,7 @@ jobs:
     - name: Setup PHP Environment Framework
       uses: shivammathur/setup-php@v2
       with:
-        php-version: '8.3'
+        php-version: '8.2'
         extensions: pdo_mysql, gd, zip
         tools: composer:v2
 
@@ -77,17 +77,6 @@ jobs:
         QUEUE_CONNECTION: sync
       run: php artisan test --parallel
 
-    # - name: Deploy to Live Server via SSH
-    #   uses: appleboy/ssh-action@master
-    #   with:
-    #     host: ${{ secrets.SERVER_IP }}
-    #     username: ${{ secrets.SERVER_USER }}
-    #     key: ${{ secrets.SERVER_SSH_KEY }}
-    #     script: |
-    #       cd /path/to/dental-clinic
-    #       docker compose pull
-    #       docker compose up -d
-
   build-and-ship:
       name: Build & Push Production Image Stack
       needs: quality-assurance
@@ -125,12 +114,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Deploy to Live Server via SSH
-      uses: appleboy/ssh-action@master
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SERVER_IP }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          cd /path/to/dental-clinic
+          cd ${{ vars.DEPLOY_PATH }}
           docker compose pull
           docker compose up -d

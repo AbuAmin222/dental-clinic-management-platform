@@ -51,7 +51,7 @@ return [
     ],
 
     'paypal' => [
-        'client_id'   => env('PAYPAY_CLIENT_ID'),
+        'client_id'   => env('PAYPAL_CLIENT_ID'),
         'secret_key'  => env('PAYPAL_SECRET'),
         'base_url'    => env('PAYPAL_BASE_URL', 'https://www.sandbox.paypal.com'),
     ],

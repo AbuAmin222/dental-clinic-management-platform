@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
@@ -29,8 +30,13 @@ class AppointmentFactory extends Factory
 
             'start_time' => $this->faker->time('H:i'),
             'end_time' => $this->faker->time('H:i'),
+            'duration_minutes' => (int) config('clinic.appointments.default_duration_minutes', 30),
 
-            'status' => $this->faker->randomElement(['scheduled', 'completed', 'cancelled']),
+            'status' => $this->faker->randomElement([
+                AppointmentStatus::Scheduled,
+                AppointmentStatus::Completed,
+                AppointmentStatus::Cancelled,
+            ]),
 
             'reason_for_visit' => $this->faker->sentence(),
             'doctor_notes' => $this->faker->optional()->paragraph(),

@@ -15,4 +15,11 @@ interface RoleRouteRegistrarInterface
      * @return void
      */
     public function register(Router $router): void;
+
+    /**
+     * Optional per-role middleware appended after the mandatory `role:{key}` guard.
+     *
+     * @return string[]
+     */
+    public function additionalMiddleware(): array;
 }

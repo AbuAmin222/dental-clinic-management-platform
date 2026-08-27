@@ -25,8 +25,14 @@ class CheckRole
     {
         $user = $request->user();
 
-        if ($user && in_array($user->role, $roles, true)) {
+        if ($user && $user->hasRole($roles)) {
             return $next($request);
+        }
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'message' => 'Unauthorized access. You do not possess the required role privileges.',
+            ], 403);
         }
 
         return redirect()

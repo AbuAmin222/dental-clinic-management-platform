@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Gender;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -24,10 +25,16 @@ return new class extends Migration
             $table->string('phone');
             $table->timestamp('email_verified_at')->nullable();
 
-            $table->string('password');
+            $table->string('phone_verification_code')->nullable();
+            $table->timestamp('phone_verification_code_expires_at')->nullable();
+            $table->timestamp('phone_verified_at')->nullable();
 
-            $table->enum('role', ['admin', 'doctor', 'receptionist', 'patient'])->default('patient');
-            $table->enum('gender', ['Male', 'Female'])->nullable();
+            $table->string('password');
+            $table->boolean('must_change_password')->default(false);
+
+            $table->unsignedBigInteger('base_salary')->nullable()->comment('Minor currency unit (agorot). Admin-managed only. See App\\Casts\\MoneyCast.');
+
+            $table->enum('gender', Gender::values())->nullable();
             $table->date('date_of_birth');
             $table->string('address')->nullable();
 
@@ -37,6 +44,9 @@ return new class extends Migration
 
             $table->string('identity_photo_path')->nullable();
             $table->string('profile_photo_path', 2048)->nullable();
+
+            $table->index('is_active');
+
             $table->timestamps();
             $table->softDeletes();
         });

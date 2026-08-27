@@ -4,94 +4,112 @@ declare(strict_types=1);
 
 namespace App\Services\PaymentService;
 
+use App\Enums\InvoiceStatus;
 use App\Exceptions\BusinessRuleViolationException;
 use App\Models\Appointment;
 use App\Models\Invoice;
+use App\Models\Pricing;
 use Illuminate\Support\Facades\DB;
 
-/**
- * Class InvoiceService
- * Handles financial ledger transactions, balance calculations, and billing generation.
- */
 class InvoiceService
 {
     /**
-     * Create invoice record wrapped in a database transaction.
+     * Create an invoice as a draft; explicit status transitions must be requested
+     * separately via transitionTo() rather than guessed from paid/total on creation.
      *
      * @param array<string, mixed> $data
      * @param int|null $doctorId
-     * @return Invoice
      */
     public function createInvoice(array $data, ?int $doctorId = null): Invoice
     {
         return DB::transaction(function () use ($data, $doctorId) {
-            $total = (float) $data['total_amount'];
-            $paid = (float) ($data['paid_amount'] ?? 0.00);
-
-            $status = $data['status'] ?? match (true) {
-                $paid >= $total => 'paid',
-                $paid > 0       => 'partially_paid',
-                default         => 'unpaid',
-            };
-
-            return Invoice::create([
+            $invoice = Invoice::create([
                 'patient_id'     => $data['patient_id'],
                 'doctor_id'      => $doctorId ?? $data['doctor_id'],
                 'appointment_id' => $data['appointment_id'] ?? null,
-                'total_amount'   => $total,
-                'paid_amount'    => $paid,
-                'status'         => $status,
-                'due_date'       => $data['due_date'],
+                'tax_amount'     => $data['tax_amount'] ?? 0,
+                'discount_amount' => $data['discount_amount'] ?? 0,
+                'status'         => InvoiceStatus::Draft,
+                'due_date'       => $data['due_date'] ?? null,
             ]);
+
+            $invoice->recalculateTotals();
+
+            return $invoice;
         });
     }
 
     /**
-     * Create or update the single invoice tied to a given appointment.
+     * Create or update the single invoice tied to a given appointment, and fully sync its
+     * line items to the submitted array (create/update/delete-diff). Totals are never set
+     * directly — InvoiceItemObserver recalculates them as a side effect of the item writes.
      *
-     * Added to support the confirmed one-to-one Appointment<->Invoice business rule
-     * (see DECISIONS_LOG.md / PENDING_TASKS.md): a receptionist may open the invoice
-     * form for an appointment that already has an invoice (edit case) or does not yet
-     * have one (create case) — both must funnel through this single, scoped operation
-     * instead of Controllers issuing raw Eloquent calls directly.
-     *
-     * @param array<string, mixed> $data
-     * @param Appointment $appointment
-     * @return Invoice
+     * @param array<string, mixed> $data Expects 'items' => array<{pricing_id?, item_name?, quantity, unit_price}>
      */
     public function upsertForAppointment(array $data, Appointment $appointment): Invoice
     {
         return DB::transaction(function () use ($data, $appointment) {
-            $total = (float) $data['total_amount'];
-            $paid = (float) $data['paid_amount'];
+            $invoice = Invoice::firstOrNew(['appointment_id' => $appointment->id]);
 
-            return Invoice::updateOrCreate(
-                ['appointment_id' => $appointment->id],
-                [
-                    'doctor_id'    => $appointment->doctor_id,
-                    'patient_id'   => $appointment->patient_id,
-                    'total_amount' => $total,
-                    'paid_amount'  => $paid,
-                    'status'       => $data['status'],
-                    'due_date'     => $data['due_date'],
-                ]
-            );
+            $invoice->fill([
+                'doctor_id'       => $appointment->doctor_id,
+                'patient_id'      => $appointment->patient_id,
+                'tax_amount'      => $data['tax_amount'] ?? $invoice->tax_amount ?? 0,
+                'discount_amount' => $data['discount_amount'] ?? $invoice->discount_amount ?? 0,
+                'due_date'        => $data['due_date'] ?? $invoice->due_date,
+            ]);
+
+            if (! $invoice->exists) {
+                $invoice->status = InvoiceStatus::Draft;
+            }
+
+            $invoice->save();
+
+            $this->syncItems($invoice, $data['items'] ?? []);
+
+            return $invoice->refresh();
         });
     }
 
     /**
-     * Record dynamic payment against an existing invoice.
+     * Reconciles an invoice's line items with the submitted array. Existing items not
+     * present in the submission (matched by id, when provided) are deleted; the rest are
+     * updated or created. Every write fires InvoiceItemObserver, which keeps the parent
+     * invoice's totals correct incrementally rather than requiring one bulk recalculation.
      *
-     * HIGH ROBUSTNESS FIX: the invoice row is re-fetched with a pessimistic lock
-     * (SELECT ... FOR UPDATE) inside the transaction before the balance check.
-     * Without this lock, two concurrent payment requests against the same invoice
-     * could both pass the balance-check read before either write is committed,
-     * allowing paid_amount to exceed total_amount (a real overpayment bug).
+     * @param array<int, array<string, mixed>> $items
+     */
+    public function syncItems(Invoice $invoice, array $items): void
+    {
+        $submittedIds = [];
+
+        foreach ($items as $itemData) {
+            $pricingName = null;
+
+            if (! empty($itemData['pricing_id'])) {
+                $pricingName = Pricing::whereKey($itemData['pricing_id'])->value('service_name');
+            }
+
+            $item = $invoice->items()->updateOrCreate(
+                ['id' => $itemData['id'] ?? null],
+                [
+                    'pricing_id' => $itemData['pricing_id'] ?? null,
+                    'item_name'  => $itemData['item_name'] ?? $pricingName ?? 'Custom item',
+                    'quantity'   => $itemData['quantity'],
+                    'unit_price' => $itemData['unit_price'],
+                ]
+            );
+
+            $submittedIds[] = $item->id;
+        }
+
+        $invoice->items()->whereNotIn('id', $submittedIds)->delete();
+    }
+
+    /**
+     * Record a payment against an existing invoice.
      *
-     * @param Invoice $invoice
-     * @param float $amount
-     * @return Invoice
-     * @throws BusinessRuleViolationException If the payment would exceed the remaining unpaid balance.
+     * @throws BusinessRuleViolationException If the payment would exceed the remaining due amount.
      */
     public function recordPayment(Invoice $invoice, float $amount): Invoice
     {
@@ -101,13 +119,13 @@ class InvoiceService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($lockedInvoice->paid_amount + $amount > $lockedInvoice->total_amount) {
+            if ($amount > $lockedInvoice->due_amount) {
                 throw new BusinessRuleViolationException(
                     __('Payment exceeds remaining unpaid invoice balance.')
                 );
             }
 
-            $lockedInvoice->pay($amount);
+            $lockedInvoice->recordPayment($amount);
 
             return $lockedInvoice->refresh();
         });

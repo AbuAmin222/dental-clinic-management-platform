@@ -6,6 +6,7 @@ use App\Factories\Validation\RoleValidationFactory;
 use App\Models\User;
 use App\Policies\Concerns\HasClinicalProfiles;
 use App\Services\UserService;
+use App\Strategies\Validation\CoreUserRules;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Fortify\Contracts\UpdatesUserProfileInformation;
@@ -26,25 +27,17 @@ class UpdateUserProfileInformation implements UpdatesUserProfileInformation
      */
     public function update(User $user, array $input): void
     {
-        $roleStrategy = RoleValidationFactory::make($user->role);
+        $userRules    = CoreUserRules::getUpdateRules($user->id);
+        $userMessages = CoreUserRules::getUpdateMessages();
 
-        $roleRules    = $roleStrategy->getUpdateRules($user, $input);
-
-
-        $roleMessages = $roleStrategy->messages();
-
-
-        Validator::make($input, $roleRules, $roleMessages)
-            ->validateWithBag('updateProfileInformation');
+        $validated = Validator::make($input, $userRules, $userMessages)->validate();
 
         $oldEmail = $user->email;
 
-        // 3. Updating records through the Service Layer.
-        $updatedUser = $this->userService->updateUserProfile($user, $input);
+        $updatedUser = $this->userService->updateCoreProfile($user, $validated);
 
-        // 4. Handling email reconfirmation in case of change.
-        if ($input['email'] !== $oldEmail && $updatedUser instanceof MustVerifyEmail) {
-            $this->updateVerifiedUser($updatedUser, $input);
+        if ($validated['email'] !== $oldEmail && $updatedUser instanceof MustVerifyEmail) {
+            $this->updateVerifiedUser($updatedUser, $validated);
         }
     }
 

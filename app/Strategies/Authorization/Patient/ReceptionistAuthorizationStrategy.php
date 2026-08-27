@@ -20,6 +20,8 @@ class ReceptionistAuthorizationStrategy implements PatientAuthorizationStrategyI
      */
     public function authorize(User $user, Patient $patient): bool
     {
+        trace_reach('ReceptionistAuthorizationStrategy@authorize', $patient->only(['user_id', 'user_id']));
+
         return true;
     }
 }

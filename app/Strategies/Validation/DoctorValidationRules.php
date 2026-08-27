@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Strategies\Validation;
 
 use App\Contracts\Validation\RoleValidationRulesInterface;
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Validation\Rule;
 
@@ -20,7 +21,7 @@ class DoctorValidationRules implements RoleValidationRulesInterface
         $coreRules = CoreUserRules::getRegistrationRules();
 
         $roleRules = [
-            'role'              => ['required', 'string', 'in:doctor'],
+            'role'              => ['required', 'string', Rule::in([UserRole::Doctor->value])],
             'specialization_id' => ['required', 'exists:specializations,id'],
             'license_number'    => ['required', 'string', Rule::unique('doctors', 'license_number')],
             'experience_years'  => ['required', 'integer', 'min:0'],
@@ -39,16 +40,12 @@ class DoctorValidationRules implements RoleValidationRulesInterface
      */
     public function getUpdateRules(User $user, array $input): array
     {
-        return array_merge(
-            CoreUserRules::getUpdateRules($user->id),
-            [
-                'role'              => ['required', 'string', 'in:doctor'],
-                'specialization_id' => ['required', 'exists:specializations,id'],
-                'license_number'    => ['required', 'string', Rule::unique('doctors', 'license_number')->ignore($user->doctor?->id)],
-                'experience_years'  => ['required', 'integer', 'min:0', 'max:80'],
-                'bio'               => ['nullable', 'string', 'max:1000'],
-            ]
-        );
+        return [
+            'specialization_id' => ['required', 'exists:specializations,id'],
+            'license_number'    => ['required', 'string', Rule::unique('doctors', 'license_number')->ignore($user->doctor?->id)],
+            'experience_years'  => ['required', 'integer', 'min:0', 'max:80'],
+            'bio'               => ['nullable', 'string', 'max:1000'],
+        ];
     }
 
     /**

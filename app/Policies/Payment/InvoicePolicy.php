@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Payment;
 
+use App\Enums\UserRole;
 use App\Factories\Authorization\InvoiceAuthorizationFactory;
 use App\Models\Appointment;
 use App\Models\Invoice;
@@ -23,7 +24,7 @@ class InvoicePolicy
     /**
      * Roles permitted to pull general accounting index ledgers.
      */
-    private const ALLOWED_VIEW_ANY_ROLES = ['doctor', 'patient', 'receptionist'];
+    private const ALLOWED_VIEW_ANY_ROLES = [UserRole::Doctor->value, UserRole::Patient->value, UserRole::Receptionist->value];
 
     /**
      * Determine whether the user can view billing arrays.
@@ -33,7 +34,7 @@ class InvoicePolicy
      */
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, self::ALLOWED_VIEW_ANY_ROLES, true);
+        return $user->hasRole(self::ALLOWED_VIEW_ANY_ROLES);
     }
 
     /**
@@ -57,7 +58,7 @@ class InvoicePolicy
      */
     public function create(User $user): bool
     {
-        return $user->role === 'receptionist';
+        return $user->hasRole(UserRole::Receptionist->value);
     }
 
     /**
@@ -70,7 +71,7 @@ class InvoicePolicy
      */
     public function update(User $user, Invoice $invoice, Appointment $appointment): bool
     {
-        return $user->role === 'receptionist' && $this->delegateToStrategy($user, $invoice, $appointment);
+        return $user->hasRole(UserRole::Receptionist->value) && $this->delegateToStrategy($user, $invoice, $appointment);
     }
 
     /**
@@ -83,7 +84,7 @@ class InvoicePolicy
      */
     public function delete(User $user, Invoice $invoice, Appointment $appointment): bool
     {
-        return $user->role === 'receptionist' && $this->delegateToStrategy($user, $invoice, $appointment);
+        return $user->hasRole(UserRole::Receptionist->value) && $this->delegateToStrategy($user, $invoice, $appointment);
     }
 
     /**
@@ -96,7 +97,7 @@ class InvoicePolicy
      */
     public function restore(User $user, Invoice $invoice, Appointment $appointment): bool
     {
-        return $user->role === 'receptionist' && $this->delegateToStrategy($user, $invoice, $appointment);
+        return $user->hasRole(UserRole::Receptionist->value) && $this->delegateToStrategy($user, $invoice, $appointment);
     }
 
     /**
@@ -121,7 +122,26 @@ class InvoicePolicy
      */
     public function pay(User $user, Invoice $invoice, Appointment $appointment): bool
     {
-        return $user->role === 'patient' && $this->delegateToStrategy($user, $invoice, $appointment);
+        return $user->hasRole(UserRole::Patient->value) && $this->delegateToStrategy($user, $invoice, $appointment);
+    }
+
+    /**
+     * Determine whether the user (a Financial officer) can issue a draft invoice — the sole
+     * gate on Invoice\InvoiceReviewController::issue(), which then calls
+     * Invoice::transitionTo(InvoiceStatus::Pending). Confirmed missing entirely (2026-08-21):
+     * the Controller called `$this->authorize('issue', $invoice)` against a method that did
+     * not exist on this class — every real invocation would have failed. Intentionally NOT
+     * routed through delegateToStrategy() (unlike pay()/update()/etc.) because this ability
+     * has no per-invoice ownership dimension to check — any Financial officer may issue any
+     * draft invoice, exactly like create() is a plain role check with no Appointment context.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Invoice  $invoice
+     * @return bool
+     */
+    public function issue(User $user, Invoice $invoice): bool
+    {
+        return $user->hasRole(UserRole::Financial->value);
     }
 
     /**

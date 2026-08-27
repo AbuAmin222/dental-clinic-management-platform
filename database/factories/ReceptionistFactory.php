@@ -21,10 +21,14 @@ class ReceptionistFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory()->state(['role' => 'receptionist']),
-            'department_id' => Department::inRandomOrder()->first()->id ?? Department::factory(),
+            // 'user_id' => User::factory()->afterCreating(
+            //     fn(User $user) => $user->assignRole(UserRole::Receptionist->value, true)
+            // ),
+            'user_id' => User::factory()->receptionist(),
+
+            'department_id' => Department::inRandomOrder()->first()?->id ?? Department::factory(),
             'employee_number' => 'EMP-' . $this->faker->unique()->numberBetween(1000, 9999),
-            'hiring_date' => $this->faker->date(),
+            'hiring_date' => $this->faker->dateTimeBetween('-5 years', 'now')->format('Y-m-d'),
         ];
     }
 }

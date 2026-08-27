@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Strategies\Validation;
 
 use App\Contracts\Validation\RoleValidationRulesInterface;
+use App\Enums\BloodGroup;
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Validation\Rule;
 
@@ -18,16 +20,16 @@ class PatientValidationRules implements RoleValidationRulesInterface
         return array_merge(
             CoreUserRules::getRegistrationRules(),
             [
-                'role'              => ['required', 'string', 'in:patient'],
+                'role'              => ['required', 'string', Rule::in([UserRole::Patient->value])],
 
-                'blood_group'             => ['required', 'string', Rule::in(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])],
+                'blood_group'             => ['required', 'string', Rule::in(BloodGroup::values())],
 
                 'allergies'               => ['nullable', 'string'],
                 'chronic_diseases'        => ['nullable', 'string'],
                 'medical_notes'           => ['nullable', 'string'],
 
                 'emergency_contact_name'  => ['required', 'string', 'min:3', 'max:30'],
-                'emergency_contact_phone' => ['required', 'regex:/^(059|056)\d{7}$/'],
+                'emergency_contact_phone' => ['required', 'regex:' . config('clinic.validation.phone_regex')],
             ]
         );
     }
@@ -37,21 +39,16 @@ class PatientValidationRules implements RoleValidationRulesInterface
      */
     public function getUpdateRules(User $user, array $input): array
     {
-        return array_merge(
-            CoreUserRules::getUpdateRules($user->id),
-            [
-                'role'              => ['required', 'string', 'in:patient'],
+        return [
+            'blood_group'             => ['required', 'string', Rule::in(BloodGroup::values())],
 
-                'blood_group'             => ['required', 'string', Rule::in(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])],
+            'allergies'               => ['nullable', 'string'],
+            'chronic_diseases'        => ['nullable', 'string'],
+            'medical_notes'           => ['nullable', 'string'],
 
-                'allergies'               => ['nullable', 'string'],
-                'chronic_diseases'        => ['nullable', 'string'],
-                'medical_notes'           => ['nullable', 'string'],
-
-                'emergency_contact_name'  => ['required', 'string', 'min:3', 'max:30'],
-                'emergency_contact_phone' => ['required', 'regex:/^(059|056)\d{7}$/'],
-            ]
-        );
+            'emergency_contact_name'  => ['required', 'string', 'min:3', 'max:30'],
+            'emergency_contact_phone' => ['required', 'regex:' . config('clinic.validation.phone_regex')],
+        ];
     }
 
     /**

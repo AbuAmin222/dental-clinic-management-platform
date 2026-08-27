@@ -14,6 +14,11 @@ use Illuminate\Routing\Router;
 class ReceptionistRouteRegistrar extends BaseRoleRouteRegistrar
 {
 
+    public function additionalMiddleware(): array
+    {
+        return ['onboarding.completed'];
+    }
+
     protected function dashboardAction(): array
     {
         return [ReceptionistController::class, 'index'];

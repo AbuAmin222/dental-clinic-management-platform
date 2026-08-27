@@ -53,12 +53,6 @@ class InvoiceController extends Controller
     /**
      * Save or update the appointment invoice.
      *
-     * Previously duplicated InvoiceService::upsertForAppointment()'s logic inline,
-     * including a manually computed `balance_amount` that could drift from the value the
-     * Invoice model itself auto-computes on its `saving` event. Now delegates entirely to
-     * the Service (single source of truth for invoice persistence rules), consistent with
-     * the confirmed one-to-one Appointment<->Invoice business rule.
-     *
      * @param StoreInvoiceRequest $request
      * @param Appointment $appointment
      * @return RedirectResponse
@@ -69,6 +63,19 @@ class InvoiceController extends Controller
 
         $validated = $request->validated();
         $validated['due_date'] = Carbon::parse($validated['due_date'])->toDateTimeString();
+
+        $pricingCatalog = Pricing::whereIn('id', array_column($validated['items'], 'pricing_id'))
+            ->get()
+            ->keyBy('id');
+
+        $validated['items'] = array_map(
+            static fn(array $item): array => [
+                'pricing_id' => $item['pricing_id'],
+                'quantity'   => $item['quantity'],
+                'unit_price' => $pricingCatalog->get($item['pricing_id'])?->amount ?? 0,
+            ],
+            $validated['items'],
+        );
 
         $this->invoiceService->upsertForAppointment($validated, $appointment);
 

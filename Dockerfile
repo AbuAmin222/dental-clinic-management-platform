@@ -1,10 +1,15 @@
 # ==========================================
 # STAGE 1: COMPILING BACKEND DEPENDENCIES (Composer)
 # ==========================================
-FROM composer:2.7 AS backend-vendor-builder
+FROM composer:2.8.6 AS backend-vendor-builder
 WORKDIR /app
-COPY composer*.json ./
-ENV COMPOSER_ALLOW_SUPERUSER=1
+
+ENV COMPOSER_HOME=/tmp/composer-home \
+    COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_NO_INTERACTION=1
+
+COPY composer.json composer.lock ./
+
 RUN composer install \
     --no-dev \
     --optimize-autoloader \
@@ -26,7 +31,7 @@ RUN npm run build
 # ==========================================
 # STAGE 3: PRODUCTION RUNTIME ENVIRONMENT
 # ==========================================
-FROM php:8.3-fpm-alpine
+FROM php:8.5.9-fpm-alpine
 WORKDIR /var/www
 
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/

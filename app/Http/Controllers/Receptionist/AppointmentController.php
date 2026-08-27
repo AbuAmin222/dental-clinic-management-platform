@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Receptionist;
 
 use App\Actions\Appointment\BookAppointmentAction;
+use App\Enums\AppointmentStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Receptionist\StoreReceptionistAppointmentRequest;
 use App\Models\Appointment;
@@ -22,9 +23,12 @@ class AppointmentController extends Controller
     {
         $this->authorize('viewAny', Appointment::class);
 
-        $query = Appointment::with(['patient.user', 'doctor.user', 'invoices']);
+        $query = Appointment::with(['patient.user', 'doctor.user', 'invoice']);
 
-        if ($request->filled('status') && $request->input('status') !== 'all') {
+        if (
+            $request->filled('status') && $request->input('status') !== 'all'
+            && in_array($request->input('status'), AppointmentStatus::values(), true)
+        ) {
             $query->where('status', $request->input('status'));
         }
 
@@ -44,7 +48,7 @@ class AppointmentController extends Controller
             });
         }
 
-        $appointments = $query->latest()->paginate(15)->withQueryString();
+        $appointments = $query->latest()->paginate((int) config('clinic.pagination.default', 15))->withQueryString();
 
         return Inertia::render('Receptionist/Appointments/Index', [
             'appointments' => $appointments,
@@ -120,7 +124,7 @@ class AppointmentController extends Controller
             'status' => [
                 'required',
                 'string',
-                Rule::in(['pending', 'scheduled', 'confirmed', 'completed', 'cancelled', 'no_show']),
+                Rule::in(AppointmentStatus::values()),
             ],
         ]);
 

@@ -50,7 +50,9 @@ class ProfileRoleController extends Controller
             $roleStrategy->messages()
         )->validate();
 
-        $this->userService->updateUserProfile($user, $validated);
+        // $this->userService->updateUserProfile($user, $validated);
+        $this->userService->updateRoleProfile($user, $validated);
+
 
         return redirect()->back()->with('success', __('Professional clinical metadata synchronized perfectly.'));
     }

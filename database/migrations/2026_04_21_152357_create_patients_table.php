@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\BloodGroup;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -14,9 +15,9 @@ return new class extends Migration
         Schema::create('patients', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->unique()->constrained('users')->cascadeOnDelete();
 
-            $table->enum('blood_group', ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])->nullable();
+            $table->enum('blood_group', BloodGroup::values())->nullable();
             $table->text('allergies')->nullable();
             $table->text('chronic_diseases')->nullable();
 
@@ -26,6 +27,7 @@ return new class extends Migration
             $table->text('medical_notes')->nullable();
 
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

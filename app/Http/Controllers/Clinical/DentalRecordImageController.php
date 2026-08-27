@@ -30,25 +30,20 @@ class DentalRecordImageController extends Controller
     /**
      * Stream a dental record's X-ray scan securely with high disk-I/O efficiency.
      *
-     * DentalRecordPolicy::view() requires (User, DentalRecord, Appointment) — the
-     * previous call `$this->authorize('view', $dentalRecord)` supplied only the DentalRecord,
-     * which would throw a TypeError as soon as Laravel tried to invoke the Policy method.
-     * The related Appointment is now resolved and passed explicitly. Since
-     * dental_records.appointment_id is nullable at the schema level while the Policy strategies
-     * require a non-null Appointment, a record with no linked appointment now fails closed
-     * (404) instead of crashing — flagged in PENDING_TASKS.md pending a business decision on
-     * whether a dental record may legitimately exist without an appointment.
+     * DentalRecordPolicy::view() requires (User, DentalRecord, Appointment). This is now safe
+     * unconditionally: `dental_records.appointment_id` was made required at the schema level
+     * (business decision confirmed 2026-08-11 — a dental record can never legitimately exist
+     * without a linked appointment), so `$dentalRecord->appointment` is guaranteed non-null.
+     * The previous 404 fallback for a null appointment was removed along with the decision —
+     * it can no longer occur, and keeping dead defensive code around a constraint the database
+     * itself now enforces would only obscure that guarantee for the next reader.
      *
      * @param  \App\Models\DentalRecord  $dentalRecord
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function show(DentalRecord $dentalRecord): Response
     {
-        $appointment = $dentalRecord->appointment;
-
-        abort_if($appointment === null, 404, 'This dental record has no linked appointment context.');
-
-        $this->authorize('view', [$dentalRecord, $appointment]);
+        $this->authorize('view', [$dentalRecord, $dentalRecord->appointment]);
 
         $path = $dentalRecord->xray_image_path;
 

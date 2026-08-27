@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('doctor_id')->constrained('doctors')->restrictOnDelete();
 
             $table->string('service_name');
-            $table->decimal('amount', 10, 2);
+            $table->unsignedBigInteger('amount');
 
             $table->timestamps();
         });

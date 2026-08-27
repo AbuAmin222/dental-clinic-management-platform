@@ -69,6 +69,8 @@ class PricingController extends Controller
      */
     public function store(StorePricingRequest $request): RedirectResponse
     {
+        $this->authorize('create', Pricing::class);
+
         $doctor = $request->user()?->doctor;
 
         if (!$doctor) {
@@ -89,6 +91,8 @@ class PricingController extends Controller
      */
     public function update(UpdatePricingRequest $request, Pricing $pricing): RedirectResponse
     {
+        $this->authorize('update', $pricing);
+
         $this->pricingService->updatePricing($pricing, $request->validated());
 
         return redirect()->back()->with('success', 'Service transaction configurations synchronized.');

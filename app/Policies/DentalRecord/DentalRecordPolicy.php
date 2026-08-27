@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\DentalRecord;
 
+use App\Enums\UserRole;
 use App\Factories\Authorization\DentalRecordAuthorizationFactory;
 use App\Models\DentalRecord;
 use App\Models\Appointment;
@@ -23,7 +24,7 @@ class DentalRecordPolicy
     /**
      * Roles permitted to access structural indexes of corporate dental history.
      */
-    private const ALLOWED_VIEW_ANY_ROLES = ['doctor', 'patient'];
+    private const ALLOWED_VIEW_ANY_ROLES = [UserRole::Doctor->value, UserRole::Patient->value];
 
     /**
      * Determine whether the user can browse index arrays of medical records.
@@ -33,7 +34,7 @@ class DentalRecordPolicy
      */
     public function viewAny(User $user): bool
     {
-        return in_array($user->role, self::ALLOWED_VIEW_ANY_ROLES, true);
+        return $user->hasRole(self::ALLOWED_VIEW_ANY_ROLES);
     }
 
     /**
@@ -58,7 +59,7 @@ class DentalRecordPolicy
      */
     public function create(User $user): bool
     {
-        return $user->role === 'doctor';
+        return $user->hasRole(UserRole::Doctor->value);
     }
 
     /**

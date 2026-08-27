@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Auth;
 
+use App\Enums\UserRole;
 use App\Factories\Validation\RoleValidationFactory;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -18,7 +19,7 @@ class StorePatientRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null && $this->user()->role === 'receptionist';
+        return $this->user() !== null && $this->user()->hasRole(UserRole::Receptionist->value);
     }
 
     public function rules(): array

@@ -40,6 +40,8 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
 
+        $user?->loadMissing(['roles.permissions', 'permissions']);
+
         return array_merge(parent::share($request), [
             'auth' => [
                 'user' => $user ? [
@@ -55,7 +57,8 @@ class HandleInertiaRequests extends Middleware
                     'address'           => $user->address,
                     'role'              => $user->role,
                     'identity_photo_path' => $user->identity_photo_path,
-                    'profile_photo_path' => $user->profile_photo_path,
+                    'profile_photo_url' => $user->profile_photo_url,
+                    'permissions'       => $user->effectivePermissionNames(),
                 ] : null,
             ],
             'roleData' => $user ? $this->transformRoleData($user) : null,
@@ -94,6 +97,14 @@ class HandleInertiaRequests extends Middleware
                 'id'              => $user->receptionist->id,
                 'department_id'   => $user->receptionist->department_id,
                 'employee_number' => $user->receptionist->employee_number,
+            ] : null,
+
+            'financial' => $user->financial ? [
+                'id'                => $user->financial->id,
+                'employee_number'   => $user->financial->employee_number,
+                'hiring_date'       => $user->financial->hiring_date,
+                'years_experience'  => $user->financial->years_experience,
+                'specialization'    => $user->financial->specialization,
             ] : null,
 
             default => null,

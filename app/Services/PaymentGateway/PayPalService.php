@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services\PaymentGateway;
 
 use App\Contracts\Payment\PaymentStrategyInterface;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentTransactionStatus;
 use App\Models\Invoice;
 use App\Models\PaymentTransaction;
 use Illuminate\Support\Facades\DB;
@@ -27,15 +29,15 @@ class PayPalService implements PaymentStrategyInterface
             $transaction = PaymentTransaction::create([
                 'invoice_id'     => $invoice->id,
                 'transaction_id' => $localTxId,
-                'payment_method' => 'paypal',
+                'payment_method' => PaymentMethod::PayPal,
                 'amount'         => $amountUsd,
                 'currency'       => 'USD',
-                'status'         => 'pending',
+                'status'         => PaymentTransactionStatus::Pending,
             ]);
 
             try {
                 $redirectUrl = route('patient.payment.sandbox.gateway', [
-                    'gateway' => 'paypal',
+                    'gateway' => PaymentMethod::PayPal->value,
                     'amount'  => $amountUsd,
                     'tx'      => $localTxId,
                 ]);
@@ -47,7 +49,7 @@ class PayPalService implements PaymentStrategyInterface
                 ];
             } catch (Throwable $e) {
                 $transaction->update([
-                    'status'           => 'failed',
+                    'status'           => PaymentTransactionStatus::Failed,
                     'gateway_response' => ['error' => $e->getMessage()],
                 ]);
 

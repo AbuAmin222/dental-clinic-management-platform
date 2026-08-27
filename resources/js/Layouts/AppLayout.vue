@@ -206,7 +206,7 @@ watch(
                     >
                       <img
                         class="size-8 rounded-full object-cover"
-                        :src="$page.props.auth.user.profile_photo_path"
+                        :src="$page.props.auth.user.profile_photo_url"
                         :alt="$page.props.auth.user.full_name"
                       />
                     </button>

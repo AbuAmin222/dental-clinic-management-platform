@@ -19,6 +19,26 @@ class UserService
     public function __construct(
         private readonly CoreProfileStrategyInterface $coreProfileStrategy
     ) {}
+
+    public function registerCoreData(array $data): User
+    {
+        return DB::transaction(function () use ($data) {
+            $fullName = $data['first_name'] . ' ' . $data['last_name'];
+            $roleDir = strtolower($data['role']);
+
+            $profilePhotoFile = $data['profile_photo'] ?? null;
+            $identityPhotoFile = $data['identity_photo'] ?? null;
+
+            $profilePath = $this->storePhoto($profilePhotoFile, $roleDir, $fullName, 'profiles');
+
+            $identityPath = $this->storePhoto($identityPhotoFile, $roleDir, $fullName, 'identities', 'secure', 'local');
+
+            $user = $this->coreProfileStrategy->create($data, $profilePath, $identityPath);
+
+            return $user;
+        });
+    }
+
     /**
      * Execute a secure transactional procedure to create a base user and their dedicated profile.
      *
@@ -56,6 +76,64 @@ class UserService
     }
 
     /**
+     * Update ONLY the core `users` row for an existing account — no role profile touch.
+     *
+     * @param  \App\Models\User      $user  The user whose core identity data is being updated.
+     * @param  array<string, mixed>  $data  Pre-validated core fields (+ optional identity_photo/profile_photo uploads).
+     * @return \App\Models\User
+     */
+    public function updateCoreProfile(User $user, array $data): User
+    {
+        return DB::transaction(function () use ($user, $data) {
+            $fullName = $data['first_name'] . ' ' . $data['last_name'];
+            $roleDir = strtolower($user->role ?? 'user');
+
+            $profilePhotoFile = $data['photo'] ?? $data['profile_photo'] ?? null;
+            $identityPhotoFile = $data['identity_photo'] ?? null;
+
+            $profilePath = null;
+            $identityPath = null;
+
+            if (isset($profilePhotoFile) && $profilePhotoFile instanceof UploadedFile) {
+                $profilePath = storage_engine()->update($fullName, $profilePhotoFile, $user->profile_photo_path, "uploads/{$roleDir}/profiles");
+            }
+
+            if (isset($identityPhotoFile) && $identityPhotoFile instanceof UploadedFile) {
+                $identityPath = storage_engine()->update($fullName, $identityPhotoFile, $user->identity_photo_path, "secure/{$roleDir}/identities", 'local');
+            }
+
+            return $this->coreProfileStrategy->update($user, $data, $profilePath, $identityPath);
+        });
+    }
+
+    /**
+     * Update ONLY the role-specific profile record for an existing user (Doctor,
+     * Patient, Receptionist, Financial, ...) — leaves the core `users` row untouched.
+     *
+     * BUG FIX: ProfileRoleController previously called updateUserProfile() above for
+     * role-only saves. That method unconditionally also runs
+     * `$this->coreProfileStrategy->update($user, $data, ...)`, which — for a role-only
+     * payload — reads `$data['profile_photo'] ?? null` / `$data['identity_photo'] ?? null`
+     * (never present in a role-details submission) and always resolves to null, then
+     * falls back to the user's existing photo paths. That fallback path means no data
+     * is actually lost, but it's still doing real, unnecessary work (a second query +
+     * write to the `users` table) on every role save, and conflates two operations the
+     * UI already presents as fully independent ("Save Structural Changes" vs
+     * "Save Role Details"). This method gives ProfileRoleController a properly scoped
+     * write path that touches only what the role-details form actually submitted.
+     *
+     * @param  \App\Models\User      $user  The user whose role profile is being updated.
+     * @param  array<string, mixed>  $data  Pre-validated role-specific fields only.
+     * @return void
+     */
+    public function updateRoleProfile(User $user, array $data): void
+    {
+        DB::transaction(function () use ($user, $data) {
+            RoleProfileFactory::make($user->role)->update($user, $data);
+        });
+    }
+
+    /**
      * Process core and role-based updates for an existing user account profile securely.
      *
      * @param  \App\Models\User      $user  The model instance targeted for modification.
@@ -70,7 +148,7 @@ class UserService
             $fullName = $data['first_name'] . ' ' . $data['last_name'];
             $roleDir = strtolower($user->role);
 
-            $profilePhotoFile = $data['profile_photo'] ?? null;
+            $profilePhotoFile = $data['photo'] ?? $data['profile_photo'] ?? null;
             $identityPhotoFile = $data['identity_photo'] ?? null;
 
             $profilePath = null;
@@ -107,16 +185,28 @@ class UserService
 
             RoleProfileFactory::make($user->role)->delete($user);
 
-            if ($user->profile_photo_path) {
-                storage_engine()->delete($user->profile_photo_path);
-            }
-
-            if ($user->identity_photo_path) {
-                storage_engine()->delete($user->identity_photo_path, 'local');
-            }
+            $this->delPhoto($user, 'profile_photo_path');
+            $this->delPhoto($user, 'identity_photo_path', 'local');
 
             $this->coreProfileStrategy->delete($user);
         });
+    }
+
+    private function storePhoto(UploadedFile $photoFile, string $roleDir, string $name, string $supDir, ?string $mainDir = 'uploads', ?string $disk = 'public'): string
+    {
+        $photoPath = null;
+
+        if (isset($photoFile) && $photoFile instanceof UploadedFile) {
+            $photoPath = storage_engine()->upload($name, $photoFile, "{$mainDir}/{$roleDir}/{$supDir}", "{$disk}");
+        }
+        return $photoPath;
+    }
+
+    private function delPhoto(User $user, string $photoFile, ?string $disk = 'public'): void
+    {
+        if ($user->$photoFile) {
+            storage_engine()->delete($user->$photoFile, $disk);
+        }
     }
 
     /**

@@ -48,6 +48,22 @@ const submitPayment = async () => {
     }
   } catch (error) {
     isProcessing.value = false;
+
+    // Laravel's 422 validation-failure response shape is { message, errors: { field:
+    // [msgs] } } — distinct from a gateway/infra failure. Checking `errors` first means a
+    // real validation problem (e.g. a server-side amount re-check rejecting the value)
+    // surfaces its actual field-level message instead of being masked by the generic
+    // "gateway under maintenance" fallback, which was actively misleading for this case.
+    if (error.response?.status === 422 && error.response?.data?.errors) {
+      const firstFieldErrors = Object.values(error.response.data.errors)[0];
+      const validationMessage = Array.isArray(firstFieldErrors)
+        ? firstFieldErrors[0]
+        : error.response.data.message;
+
+      notify("Payment Rejected", validationMessage, "error");
+      return;
+    }
+
     const errorMessage =
       error.response?.data?.message ||
       "The selected payment gateway is currently undergoing maintenance.";

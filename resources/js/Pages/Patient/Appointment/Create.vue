@@ -47,19 +47,32 @@ const submitForm = () => {
     return;
   }
 
-  form.post(route("patient.appointment.store"), {
-    onSuccess: () => {
-      toast("Appointment requested successfully! Pending clinic approval.", "success");
-    },
-    onError: (errors) => {
-      if (errors.start_time) {
-        // Trigger alert if overlap collision is caught by backend architecture
-        notify("Schedule Conflict", errors.start_time, "error");
-      } else {
-        notify("Submission Failed", "Please check form entries and try again.", "error");
-      }
-    },
-  });
+  form
+    .transform((data) => ({
+      ...data,
+      start_time:
+        data.start_time.length === 5 ? `${data.start_time}:00` : data.start_time,
+    }))
+    .post(route("patient.appointment.store"), {
+      onSuccess: () => {
+        toast("Appointment requested successfully! Pending clinic approval.", "success");
+      },
+      onError: (errors) => {
+        if (errors.start_time && !errors.start_time.includes("format")) {
+          notify("Schedule Conflict", errors.start_time, "error");
+        }
+        if (errors.start_time) {
+          // Trigger alert if overlap collision is caught by backend architecture
+          notify("Schedule Conflict", errors.start_time, "error");
+        } else {
+          notify(
+            "Submission Failed",
+            "Please check form entries and try again.",
+            "error"
+          );
+        }
+      },
+    });
 };
 </script>
 

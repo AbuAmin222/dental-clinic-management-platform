@@ -61,6 +61,7 @@ class DentalRecord extends Model
         'xray_image_path',
     ];
 
+
     /**
      * Define structural inverse relationship to the professional Doctor instance.
      *

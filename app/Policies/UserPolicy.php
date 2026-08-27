@@ -2,6 +2,9 @@
 
 namespace App\Policies;
 
+use App\Enums\AdminAccessLevel;
+use App\Enums\UserRole;
+use App\Models\Admin;
 use App\Models\User;
 use App\Policies\Concerns\HasClinicalProfiles;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -29,7 +32,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->role === 'admin';
+        return $user->hasRole(UserRole::Admin->value);
     }
 
     /**
@@ -37,7 +40,7 @@ class UserPolicy
      */
     public function view(User $user, User $target): bool
     {
-        return $user->role === 'admin' || $user->id === $target->id;
+        return $user->hasRole(UserRole::Admin->value) || $user->id === $target->id;
     }
 
     /**
@@ -45,7 +48,7 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return $user->role === 'admin';
+        return $user->hasRole(UserRole::Admin->value);
     }
 
     /**
@@ -54,14 +57,33 @@ class UserPolicy
      */
     public function update(User $user, User $target): bool
     {
-        return $user->role === 'admin' || $user->id === $target->id;
+        return $user->hasRole(UserRole::Admin->value) || $user->id === $target->id;
     }
 
     /**
      * Determine whether the user can delete the target account.
+     *
+     * حماية المسؤول الجذري (2026-08-22): لا يجوز حذف حساب SuperAdmin إلا من قِبل
+     * SuperAdmin آخر، ولا يجوز أبداً حذف آخر SuperAdmin متبقٍّ في النظام — بدون هذا
+     * القيد، حذف الحساب الوحيد صاحب `AdminAccessLevel::SuperAdmin` كان سيقفل كل مسارات
+     * إدارة الأدوار/الصلاحيات في النظام بلا رجعة (لا أحد يملك صلاحية استعادتها بعدها).
      */
     public function delete(User $user, User $target): bool
     {
-        return $user->role === 'admin' || $user->id === $target->id;
+        if (! ($user->hasRole(UserRole::Admin->value) || $user->id === $target->id)) {
+            return false;
+        }
+
+        if ($target->admin?->isSuperAdmin()) {
+            if (! $user->admin?->isSuperAdmin()) {
+                return false;
+            }
+
+            if (Admin::where('access_level', AdminAccessLevel::SuperAdmin)->count() <= 1) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

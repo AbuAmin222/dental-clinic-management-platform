@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Factories\Payment;
 
 use App\Contracts\Payment\PaymentStrategyInterface;
-use App\Services\Payment\BankOfPalestineCardService;
-use App\Services\Payment\JawwalPayService;
-use App\Services\Payment\PalPayService;
-use App\Services\Payment\PayPalService;
+use App\Enums\PaymentMethod;
+use App\Services\PaymentGateway\BankOfPalestineCardService;
+use App\Services\PaymentGateway\JawwalPayService;
+use App\Services\PaymentGateway\PalPayService;
+use App\Services\PaymentGateway\PayPalService;
 use InvalidArgumentException;
 
 class PaymentManagerFactory
@@ -19,12 +20,12 @@ class PaymentManagerFactory
      * @var array<string, class-string<PaymentStrategyInterface>>
      */
     protected static array $map = [
-        'bop'        => BankOfPalestineCardService::class,
-        'visa'       => BankOfPalestineCardService::class,
-        'mastercard' => BankOfPalestineCardService::class,
-        'jawwal_pay' => JawwalPayService::class,
-        'palpay'     => PalPayService::class,
-        'paypal'     => PayPalService::class,
+        PaymentMethod::BankOfPalestine->value => BankOfPalestineCardService::class,
+        PaymentMethod::Mastercard->value      => BankOfPalestineCardService::class,
+        PaymentMethod::Visa->value            => BankOfPalestineCardService::class,
+        PaymentMethod::JawwalPay->value       => JawwalPayService::class,
+        PaymentMethod::PalPay->value          => PalPayService::class,
+        PaymentMethod::PayPal->value          => PayPalService::class,
     ];
 
     /**

@@ -6,6 +6,7 @@ namespace App\Actions\Patient;
 
 use App\Factories\Validation\RoleValidationFactory;
 use App\Models\User;
+use App\Services\Security\AccountVerificationService;
 use App\Services\UserService;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Jetstream\Jetstream;
@@ -13,14 +14,17 @@ use Laravel\Jetstream\Jetstream;
 class RegisterPatientAction
 {
     protected UserService $userService;
+    protected AccountVerificationService $accountVerificationService;
 
     /**
      * Constructor Dependency Injection restored.
      */
-    public function __construct(UserService $userService)
+    public function __construct(UserService $userService, AccountVerificationService $accountVerificationService)
     {
         $this->userService = $userService;
+        $this->accountVerificationService = $accountVerificationService;
     }
+
 
     /**
      * Atomically create user profile and delegate dynamic patient profile store to factory strategy.
@@ -62,6 +66,11 @@ class RegisterPatientAction
 
         $validatedData = Validator::make($fullData, $rules, $messages)->validate();
 
-        return $this->userService->registerUser($validatedData);
+        $user = $this->userService->registerUser($validatedData);
+
+        $user->forceFill(['must_change_password' => true])->save();
+        $this->accountVerificationService->generateAndSendVerificationCode($user);
+
+        return $user;
     }
 }

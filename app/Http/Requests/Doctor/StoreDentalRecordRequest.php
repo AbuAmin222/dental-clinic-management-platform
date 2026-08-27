@@ -11,12 +11,6 @@ class StoreDentalRecordRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * Note: this only checks the role-level 'create' ability. Ownership of the specific
-     * appointment (is this doctor actually assigned to it?) is separately enforced by
-     * Doctor\DentalRecordController via $this->authorize('update', $appointment) — kept
-     * as a distinct check because the Appointment is a route parameter, not part of this
-     * request's own validated payload.
      */
     public function authorize(): bool
     {
@@ -27,26 +21,20 @@ class StoreDentalRecordRequest extends FormRequest
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * FIX (Coherence Audit): previously defined patient_id/appointment_id rules here that
-     * were never actually used — DentalRecordController performed its own separate, looser,
-     * inline Validator::make() with a different rule set entirely (e.g. tooth_number as a
-     * 2-character string instead of an integer 1-32, description required with min:5 vs
-     * nullable here). Both this class and the manual validator are now unified into this
-     * single source of truth. patient_id/appointment_id are removed because the doctor
-     * dental-record routes are always scoped to a route-bound Appointment
-     * (appointments/{appointment}/dental-record/...) — trusting those IDs from client input
-     * would be redundant at best and a spoofing surface at worst.
-     *
      * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
+        $toothMin = (int) config('clinic.dental_chart.tooth_number_min', 1);
+        $toothMax = (int) config('clinic.dental_chart.tooth_number_max', 32);
+        $xrayMimes = implode(',', config('clinic.uploads.xray.mimes', ['jpeg', 'png', 'jpg', 'webp']));
+        $xrayMaxKb = (int) config('clinic.uploads.xray.max_kb', 5120);
+
         return [
-            'tooth_number'   => ['nullable', 'integer', 'between:1,32'],
+            'tooth_number'   => ['nullable', 'integer', "between:{$toothMin},{$toothMax}"],
             'condition_type' => ['required', 'string', 'max:255'],
             'description'    => ['required', 'string', 'min:5', 'max:2000'],
-            'xray_image'     => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+            'xray_image'     => ['nullable', 'image', "mimes:{$xrayMimes}", "max:{$xrayMaxKb}"],
         ];
     }
 

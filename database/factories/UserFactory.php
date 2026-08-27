@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\UserRole;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -33,18 +34,22 @@ class UserFactory extends Factory
             'middle_name' => fake()->firstName('male'),
             'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
-            // 'identity_number' => fake()->numberBetween(111111111, 999999999),
             'identity_number' => $identityNumber,
             'phone' => fake()->phoneNumber(),
 
             'date_of_birth' => fake()->date('Y-m-d', '-18 years'),
+            'address' => fake()->address(),
 
             'password' => static::$password ??= Hash::make($identityNumber),
 
             'identity_photo_path' => 'identities/default.png',
 
             'gender' => fake()->randomElement(['Male', 'Female']),
-            'role' => 'patient',
+            // ⚠️ لا يوجد مفتاح 'role' هنا عمداً (إصلاح 2026-08-22): `users.role` لم يعد
+            // عموداً فعلياً — كتابته هنا كانت تُتجاهَل بصمت من Eloquent (ليس في $fillable)،
+            // ما كان يعني أن كل مستخدم يُنشأ بهذا الـ Factory بلا أي دور فعلي في
+            // role_users. الدور الآن يُسنَد حصراً عبر state methods أدناه (->doctor()،
+            // ->admin()، إلخ) التي تستدعي assignRole() فعلياً بعد الإنشاء.
             'is_active' => true,
             'remember_token' => Str::random(10),
 
@@ -85,5 +90,44 @@ class UserFactory extends Factory
                 ->when(is_callable($callback), $callback),
             'ownedTeams'
         );
+    }
+
+    /**
+     * إسناد دور بعد الإنشاء مباشرة — القاسم المشترك لكل state method أدناه.
+     * User::booted()'s created hook لا يعمل هنا لأن لا يوجد عمود 'role' يقرأه أصلاً؛
+     * afterCreating() هو المسار الصحيح الوحيد لإسناد دور فعلي من داخل Factory.
+     */
+    private function withRole(UserRole $role): static
+    {
+        return $this->afterCreating(function (User $user) use ($role): void {
+            if ($user->roles()->doesntExist()) {
+                $user->assignRole($role->value, isPrimary: true);
+            }
+        });
+    }
+
+    public function doctor(): static
+    {
+        return $this->withRole(UserRole::Doctor);
+    }
+
+    public function patient(): static
+    {
+        return $this->withRole(UserRole::Patient);
+    }
+
+    public function receptionist(): static
+    {
+        return $this->withRole(UserRole::Receptionist);
+    }
+
+    public function financial(): static
+    {
+        return $this->withRole(UserRole::Financial);
+    }
+
+    public function admin(): static
+    {
+        return $this->withRole(UserRole::Admin);
     }
 }

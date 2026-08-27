@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services\PaymentGateway;
 
 use App\Contracts\Payment\PaymentStrategyInterface;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentTransactionStatus;
 use App\Models\Invoice;
 use App\Models\PaymentTransaction;
 use Illuminate\Support\Facades\DB;
@@ -22,15 +24,15 @@ class JawwalPayService implements PaymentStrategyInterface
             $transaction = PaymentTransaction::create([
                 'invoice_id'     => $invoice->id,
                 'transaction_id' => $localTxId,
-                'payment_method' => 'jawwal_pay',
+                'payment_method' => PaymentMethod::JawwalPay,
                 'amount'         => $amount,
                 'currency'       => 'ILS',
-                'status'         => 'pending',
+                'status'         => PaymentTransactionStatus::Pending,
             ]);
 
             try {
                 $redirectUrl = route('patient.payment.sandbox.gateway', [
-                    'gateway' => 'jawwal_pay',
+                    'gateway' => PaymentMethod::JawwalPay->value,
                     'amount'  => $amount,
                     'tx'      => $localTxId,
                 ]);
@@ -42,7 +44,7 @@ class JawwalPayService implements PaymentStrategyInterface
                 ];
             } catch (Throwable $e) {
                 $transaction->update([
-                    'status'           => 'failed',
+                    'status'           => PaymentTransactionStatus::Failed,
                     'gateway_response' => ['error' => $e->getMessage()],
                 ]);
 

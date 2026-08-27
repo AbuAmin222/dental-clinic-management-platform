@@ -16,7 +16,7 @@ class CoreProfileStrategy implements CoreProfileStrategyInterface
      */
     public function create(array $data, ?string $profilePath = null, ?string $identityPath = null): User
     {
-        return User::create([
+        $user = User::create([
             'first_name' => $data['first_name'],
             'middle_name' => $data['middle_name'],
             'last_name' => $data['last_name'],
@@ -25,13 +25,16 @@ class CoreProfileStrategy implements CoreProfileStrategyInterface
             'identity_number' => $data['identity_number'],
             'phone' => $data['phone'],
             'password' => Hash::make($data['password']),
-            'role' => $data['role'],
             'gender' => $data['gender'],
             'date_of_birth' => $data['date_of_birth'],
             'address' => $data['address'],
             'identity_photo_path' => $identityPath,
             'profile_photo_path' => $profilePath,
         ]);
+
+        $user->assignRole($data['role'], isPrimary: true);
+
+        return $user;
     }
 
     /**

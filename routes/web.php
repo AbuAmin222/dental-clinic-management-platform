@@ -43,12 +43,20 @@ Route::middleware([
     config('jetstream.auth_session'),
     'active',
     'verified',
+    'account-security.completed',
 ])->group(static function (Illuminate\Routing\Router $router): void {
 
     // Global Core Operational Telemetry (Unified Global Route Fallback)
     Route::get('/dashboard', [DashboardsController::class, 'index'])->name('dashboard');
     Route::get('/dental-records/{dentalRecord}/xray', [DentalRecordImageController::class, 'show'])->name('dental-records.xray');
     Route::put('/user/profile-role', [ProfileRoleController::class, 'update'])->name('user-profile-role.update');
+
+    Route::prefix('account-security')->name('account-security.')->group(static function (Illuminate\Routing\Router $router): void {
+        $router->get('/', [\App\Http\Controllers\AccountSecurity\AccountSecurityController::class, 'show'])->name('show');
+        $router->put('/password', [\App\Http\Controllers\AccountSecurity\AccountSecurityController::class, 'updatePassword'])->name('password.update');
+        $router->post('/verify-code', [\App\Http\Controllers\AccountSecurity\AccountSecurityController::class, 'verifyCode'])->name('verify-code');
+        $router->post('/resend-code', [\App\Http\Controllers\AccountSecurity\AccountSecurityController::class, 'resendCode'])->name('resend-code');
+    });
 
     // Cross-Cutting Concerns: Generic Identity Management Layout
     $router->prefix('user/profile')->group(base_path('routes/roles/profile.php'));

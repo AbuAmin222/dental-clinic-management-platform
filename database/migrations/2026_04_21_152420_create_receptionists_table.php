@@ -14,12 +14,13 @@ return new class extends Migration
         Schema::create('receptionists', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('user_id')->unique()->constrained('users')->cascadeOnDelete();
             $table->foreignId('department_id')->constrained('departments')->restrictOnDelete();
 
             $table->string('employee_number')->unique();
             $table->date('hiring_date')->nullable();
 
+            $table->softDeletes();
             $table->timestamps();
         });
     }

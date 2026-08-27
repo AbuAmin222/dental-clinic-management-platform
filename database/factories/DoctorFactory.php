@@ -21,8 +21,12 @@ class DoctorFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory()->state(['role' => 'doctor']),
-            'specialization_id' => Specialization::inRandomOrder()->first()->id,
+            // 'user_id' => User::factory()->afterCreating(
+            //     fn(User $user) => $user->assignRole(UserRole::Doctor->value, true)
+            // ),
+            'user_id' => User::factory()->doctor(),
+
+            'specialization_id' => Specialization::inRandomOrder()->first()?->id ?? Specialization::factory(),
             'license_number' => 'DOC-' . fake()->unique()->numberBetween(1000, 9999),
             'experience_years' => fake()->numberBetween(1, 20),
             'bio' => fake()->sentence(),

@@ -4,10 +4,27 @@ declare(strict_types=1);
 
 namespace App\Strategies\Validation;
 
+use App\Enums\Gender;
 use Illuminate\Validation\Rule;
 
 class CoreUserRules
 {
+    /**
+     * قواعد رفع صورة الهوية/الملف الشخصي — نقطة واحدة مركزية بدل تكرارها 4 مرات
+     * (كانت مكتوبة يدوياً في كل من identity_photo/profile_photo/photo عبر دالتين).
+     *
+     * @return array<int, mixed>
+     */
+    private static function identityImageRule(bool $required): array
+    {
+        return [
+            $required ? 'required' : 'nullable',
+            'image',
+            'mimes:' . implode(',', config('clinic.uploads.identity_document.mimes')),
+            'max:' . config('clinic.uploads.identity_document.max_kb'),
+        ];
+    }
+
     /**
      * Common rules for the registration process (creating a new account).
      */
@@ -21,12 +38,12 @@ class CoreUserRules
             'email'           => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'password'        => ['required', 'string', 'min:10', 'max:35'],
             'identity_number' => ['required', 'string', 'size:9', Rule::unique('users', 'identity_number')],
-            'phone'           => ['required', 'string', 'regex:/^(059|056)\d{7}$/'],
-            'gender'          => ['required', 'in:Male,Female'],
+            'phone'           => ['required', 'string', 'regex:' . config('clinic.validation.phone_regex')],
+            'gender'          => ['required', Rule::in(Gender::values())],
             'date_of_birth'   => ['required', 'date'],
             'address'         => ['nullable', 'string', 'max:255'],
-            'identity_photo'  => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:4096'],
-            'profile_photo'   => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:4096'],
+            'identity_photo'  => self::identityImageRule(required: true),
+            'profile_photo'   => self::identityImageRule(required: false),
         ];
     }
 
@@ -69,12 +86,12 @@ class CoreUserRules
             'last_name'      => ['required', 'string', 'min:3', 'max:20'],
             'username'       => ['required', 'string', 'min:3', 'max:25', Rule::unique('users', 'username')->ignore($userId)],
             'email'          => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
-            'phone'          => ['required', 'string', 'regex:/^(059|056)\d{7}$/'],
-            'gender'         => ['required', 'in:Male,Female'],
+            'phone'          => ['required', 'string', 'regex:' . config('clinic.validation.phone_regex')],
+            'gender'         => ['required', Rule::in(Gender::values())],
             'date_of_birth'  => ['required', 'date'],
             'address'        => ['nullable', 'string', 'max:255'],
-            'identity_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:4096'],
-            'photo'          => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:4096'],
+            'identity_photo' => self::identityImageRule(required: false),
+            'photo'          => self::identityImageRule(required: false),
         ];
     }
 

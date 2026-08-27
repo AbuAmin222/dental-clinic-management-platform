@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Dashboard;
 
 use App\Contracts\Telemetry\DashboardTelemetryInterface;
+use App\Enums\AppointmentStatus;
+use App\Enums\InvoiceStatus;
 use App\Models\Appointment;
 use App\Models\Invoice;
 use App\Models\Patient;
@@ -24,8 +26,16 @@ class ReceptionistDashboardTelemetry implements DashboardTelemetryInterface
     {
         return [
             'metrics' => [
-                'active_appointments' => Appointment::whereIn('status', ['pending', 'scheduled', 'confirmed', 'no_show'])->count(),
-                'pending_collections' => Invoice::whereIn('status', ['unpaid', 'partially_paid'])->count(),
+                'active_appointments' => Appointment::whereIn('status', [
+                    AppointmentStatus::Pending,
+                    AppointmentStatus::Scheduled,
+                    AppointmentStatus::Confirmed,
+                    AppointmentStatus::Stopped,
+                ])->count(),
+                'pending_collections' => Invoice::whereIn('status', [
+                    InvoiceStatus::Pending,
+                    InvoiceStatus::PartiallyPaid,
+                ])->count(),
                 'total_patients'      => Patient::count(),
             ],
             'view_path' => 'Receptionist/Dashboard'

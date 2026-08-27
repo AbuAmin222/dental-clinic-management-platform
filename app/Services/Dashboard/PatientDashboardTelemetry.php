@@ -23,7 +23,7 @@ class PatientDashboardTelemetry implements DashboardTelemetryInterface
         $patientData = Patient::where('user_id', $user->id)
             ->with([
                 'appointments' => static function ($query): void {
-                    $query->with(['doctor.user', 'invoices'])->latest();
+                    $query->with(['doctor.user', 'invoice'])->latest();
                 },
                 'dentalRecords' => static function ($query): void {
                     $query->with(['doctor.user', 'appointment'])->latest();

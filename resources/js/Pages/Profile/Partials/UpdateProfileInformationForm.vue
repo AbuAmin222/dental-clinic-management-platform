@@ -38,10 +38,14 @@ const form = useForm({
 
   photo: null,
   profile_photo: null,
+  identity_photo: null,
 });
 
-const { profilePreview, handleFileUpload, removeFile } = useFileHandle(form);
+const { identityPreview, profilePreview, handleFileUpload, removeFile } = useFileHandle(
+  form
+);
 const photoInput = ref(null);
+const identityPhotoInput = ref(null);
 
 const selectNewPhoto = () => {
   photoInput.value.click();
@@ -49,6 +53,16 @@ const selectNewPhoto = () => {
 const handlePhotoChange = (e) => {
   handleFileUpload(e, "profile_photo");
 };
+
+const selectNewIdentityPhoto = () => {
+  identityPhotoInput.value.click();
+};
+const handleIdentityPhotoChange = (e) => {
+  handleFileUpload(e, "identity_photo");
+};
+
+const currentIdentityPhotoUrl = computed(() => route("profile.identity-photo"));
+const hasIdentityPhoto = computed(() => !!page.props.auth.user?.has_identity_photo);
 
 const updateProfileInformation = () => {
   if (form.profile_photo) {
@@ -65,6 +79,7 @@ const updateProfileInformation = () => {
       preserveScroll: true,
       onSuccess: () => {
         toast("Personal details updated successfully.", "success");
+        removeFile("identity_photo");
       },
     });
 };
@@ -111,7 +126,7 @@ const deletePhoto = () => {
         <div class="relative group">
           <div v-show="!profilePreview" class="relative">
             <img
-              :src="$page.props.auth.user.profile_photo_path"
+              :src="$page.props.auth.user.profile_photo_url"
               :alt="$page.props.auth.user.full_name"
               class="rounded-full h-24 w-24 object-cover ring-4 ring-white shadow-md transition duration-300"
             />
@@ -169,7 +184,7 @@ const deletePhoto = () => {
               Upload Image
             </button>
             <button
-              v-if="user.profile_photo_path || profilePreview"
+              v-if="user.profile_photo_url || profilePreview"
               type="button"
               @click="deletePhoto"
               class="text-xs font-semibold bg-red-50 hover:bg-red-100/80 border border-red-200 text-red-600 py-1.5 px-3 rounded-xl transition"
@@ -177,6 +192,66 @@ const deletePhoto = () => {
               Remove
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- Identity Document Card Row -->
+      <div
+        class="col-span-6 bg-slate-50/70 border border-slate-100 rounded-2xl p-5 flex flex-col sm:flex-row items-center gap-6 shadow-sm transition duration-200"
+      >
+        <input
+          id="identity_photo"
+          ref="identityPhotoInput"
+          type="file"
+          accept="image/*"
+          class="hidden"
+          @change="handleIdentityPhotoChange"
+        />
+        <div class="relative group">
+          <div v-show="!identityPreview" class="relative">
+            <img
+              v-if="hasIdentityPhoto"
+              :src="currentIdentityPhotoUrl"
+              alt="Identity document"
+              class="rounded-xl h-24 w-32 object-cover ring-4 ring-white shadow-md transition duration-300"
+            />
+            <div
+              v-else
+              class="rounded-xl h-24 w-32 bg-slate-100 ring-4 ring-white shadow-md flex items-center justify-center text-slate-400 text-xs font-medium"
+            >
+              No document
+            </div>
+          </div>
+          <div v-show="identityPreview">
+            <span
+              class="block rounded-xl w-32 h-24 bg-cover bg-no-repeat bg-center ring-4 ring-white shadow-md"
+              :style="'background-image: url(\'' + identityPreview + '\');'"
+            />
+          </div>
+        </div>
+
+        <div
+          class="flex-1 flex flex-col gap-2 items-center sm:items-start text-center sm:text-left"
+        >
+          <div>
+            <span
+              class="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-1"
+              >Identity Document</span
+            >
+            <span class="text-xs text-slate-500">
+              Visible only to you and clinic administrators.
+            </span>
+          </div>
+          <div class="flex gap-2 mt-1">
+            <button
+              type="button"
+              @click="selectNewIdentityPhoto"
+              class="text-xs font-semibold bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 py-1.5 px-3 rounded-xl shadow-sm transition"
+            >
+              {{ hasIdentityPhoto ? "Replace Document" : "Upload Document" }}
+            </button>
+          </div>
+          <InputError :message="form.errors.identity_photo" class="mt-1" />
         </div>
       </div>
 

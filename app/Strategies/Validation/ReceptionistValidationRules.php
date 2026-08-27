@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Strategies\Validation;
 
 use App\Contracts\Validation\RoleValidationRulesInterface;
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Validation\Rule;
 
@@ -20,7 +21,7 @@ class ReceptionistValidationRules implements RoleValidationRulesInterface
         $coreRules = CoreUserRules::getRegistrationRules();
 
         $roleRules = [
-            'role'            => ['required', 'string', 'in:receptionist'],
+            'role'            => ['required', 'string', Rule::in([UserRole::Receptionist->value])],
             'department_id'   => ['required', 'exists:departments,id'],
             'employee_number' => ['required', 'string', Rule::unique('receptionists', 'employee_number')],
             'hiring_date'     => ['required', 'date', 'before_or_equal:today'],
@@ -38,16 +39,11 @@ class ReceptionistValidationRules implements RoleValidationRulesInterface
      */
     public function getUpdateRules(User $user, array $input): array
     {
-        return array_merge(
-            CoreUserRules::getUpdateRules($user->id),
-            [
-                'role'            => ['required', 'string', 'in:receptionist'],
-
-                'department_id'   => ['required', 'exists:departments,id'],
-                'employee_number' => ['required', 'string', Rule::unique('receptionists', 'employee_number')->ignore($user->receptionist?->id)],
-                'hiring_date'     => ['required', 'date', 'before_or_equal:today'],
-            ]
-        );
+        return [
+            'department_id'   => ['required', 'exists:departments,id'],
+            'employee_number' => ['required', 'string', Rule::unique('receptionists', 'employee_number')->ignore($user->receptionist?->id)],
+            'hiring_date'     => ['required', 'date', 'before_or_equal:today'],
+        ];
     }
 
     /**

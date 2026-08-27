@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\Concerns;
 
+use App\Enums\UserRole;
 use App\Models\User;
 
 trait HasClinicalProfiles
@@ -16,7 +17,9 @@ trait HasClinicalProfiles
     protected static array $profileIdCache = [];
 
     /**
-     * Intercept all authorization checks to strictly block inactive users.
+     * Intercept all authorization checks: block inactive users unconditionally, then
+     * grant Admin unconditional access to every ability on every Policy using this trait
+     * (Appointment/DentalRecord/Invoice/Patient/Pricing/User) — confirmed decision
      *
      * @param  \App\Models\User  $user
      * @param  string  $ability
@@ -28,7 +31,11 @@ trait HasClinicalProfiles
             return false;
         }
 
-        return null; // Fallback to concrete policy methods
+        if ($user->hasRole(UserRole::Admin->value)) {
+            return true;
+        }
+
+        return null;
     }
 
     /**
