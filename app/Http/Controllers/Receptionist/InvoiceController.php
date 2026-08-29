@@ -40,7 +40,7 @@ class InvoiceController extends Controller
 
         $appointment->load(['patient.user', 'doctor.user']);
 
-        $invoice = Invoice::where('appointment_id', $appointment->id)->first();
+        $invoice = Invoice::with('items')->where('appointment_id', $appointment->id)->first();
         $pricings = Pricing::where('doctor_id', $appointment->doctor_id)->get();
 
         return Inertia::render('Receptionist/Invoices/Create', [

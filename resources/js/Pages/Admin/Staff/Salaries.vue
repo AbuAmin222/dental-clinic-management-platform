@@ -12,6 +12,8 @@
       </div>
     </template>
 
+    <AdminSubNav />
+
     <div class="min-h-screen bg-gray-50 p-6">
       <div class="max-w-5xl mx-auto space-y-8">
         <div v-for="(members, role) in groupedStaff" :key="role" class="space-y-3">
@@ -116,6 +118,7 @@
 import { reactive, ref, computed } from "vue";
 import { router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import AdminSubNav from "@/Components/Admin/AdminSubNav.vue";
 import { useNotifications } from "@/Composables/UI/useNotifications";
 
 const props = defineProps({

@@ -47,7 +47,7 @@ class DashboardController extends Controller
         $today = Carbon::today()->toDateString();
 
         // Optimized query with specific indexed multi-relation eager loading to prevent N+1 queries
-        $appointments = Appointment::with(['patient.user', 'invoices'])
+        $appointments = Appointment::with(['patient.user', 'invoice'])
             ->where('doctor_id', $doctor->id)
             ->where('appointment_date', $today)
             ->orderBy('start_time', 'asc')

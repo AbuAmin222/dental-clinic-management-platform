@@ -17,6 +17,8 @@
       </div>
     </template>
 
+    <AdminSubNav />
+
     <div class="min-h-screen bg-gray-50 p-6">
       <div class="max-w-5xl mx-auto space-y-4">
         <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
@@ -126,6 +128,7 @@
 <script setup>
 import { Link } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import AdminSubNav from "@/Components/Admin/AdminSubNav.vue";
 import Pagination from "@/Components/Pagination.vue";
 
 defineProps({

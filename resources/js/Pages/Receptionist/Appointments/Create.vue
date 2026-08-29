@@ -30,6 +30,10 @@ const minDateTime = new Date(Date.now() - new Date().getTimezoneOffset() * 60000
   .slice(0, 16);
 
 const submitForm = () => {
+  if (form.processing) {
+    return;
+  }
+
   if (!form.patient_id || !form.doctor_id || !form.appointment_date) {
     notify(
       "Validation Error",

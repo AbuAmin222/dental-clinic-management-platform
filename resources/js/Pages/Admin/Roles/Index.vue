@@ -11,6 +11,8 @@
       </div>
     </template>
 
+    <AdminSubNav />
+
     <div class="min-h-screen bg-gray-50 p-6">
       <div class="max-w-4xl mx-auto space-y-4">
         <div
@@ -62,6 +64,7 @@
 <script setup>
 import { Link } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import AdminSubNav from "@/Components/Admin/AdminSubNav.vue";
 
 defineProps({
   roles: { type: Array, required: true },

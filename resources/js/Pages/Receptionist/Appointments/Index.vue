@@ -166,24 +166,24 @@
 
                   <!-- Invoice | Financial -->
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
-                    <div v-if="appt.invoices && appt.invoices.length > 0">
+                    <div v-if="appt.invoice">
                       <span
-                        :class="getInvoiceBadgeClass(appt.invoices[0].status)"
+                        :class="getInvoiceBadgeClass(appt.invoice.status)"
                         class="px-2.5 py-1 text-xs font-semibold rounded-full border"
                       >
                         <Link :href="route('receptionist.invoices.create', appt.id)">
-                          {{ getInvoiceStatusLabel(appt.invoices[0].status) }}
+                          {{ getInvoiceStatusLabel(appt.invoice.status) }}
                         </Link>
                       </span>
 
-                      <div v-if="appt.invoices[0].status === 'partially_paid'">
+                      <div v-if="appt.invoice.status === 'partially_paid'">
                         <div class="text-xs text-gray-400 mt-1.5 font-medium">
                           💰 Paid:
-                          {{ formatCurrency(appt.invoices[0].paid_amount, "ILS") }}
+                          {{ formatCurrency(appt.invoice.paid_amount, "ILS") }}
                         </div>
                         <div class="text-xs text-gray-400 mt-1.5 font-medium">
                           Residual:
-                          {{ formatCurrency(appt.invoices[0].balance_amount, "ILS") }}
+                          {{ formatCurrency(appt.invoice.balance_amount, "ILS") }}
                         </div>
                       </div>
                     </div>

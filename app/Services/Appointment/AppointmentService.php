@@ -120,7 +120,7 @@ class AppointmentService
             'duration_minutes'     => Carbon::parse($startTime)->diffInMinutes(Carbon::parse($endTime)),
             'reason_for_visit'     => $data['reason_for_visit'] ?? null,
             'doctor_notes'         => $data['doctor_notes'] ?? null,
-            'status'               => AppointmentStatus::Scheduled,
+            'status'               => $data['status'] ?? AppointmentStatus::Confirmed
         ]);
         return $appointment;
     }

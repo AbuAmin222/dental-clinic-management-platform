@@ -16,7 +16,14 @@ class PatientAuthorizationStrategy implements InvoiceAuthorizationStrategyInterf
 
     public function authorize(User $user, Invoice $invoice, Appointment $appointment): bool
     {
+        $patientId = $this->getPatientId($user);
+        $appointmentId = $appointment->id;
 
-        return false;
+        $invoicePatientId = $invoice->patient_id;
+        $invoiceAppointmentId = $invoice->appointment_id;
+
+        return $patientId !== null
+            && $patientId === $invoicePatientId
+            && $appointmentId === $invoiceAppointmentId;
     }
 }

@@ -15,6 +15,8 @@
       </div>
     </template>
 
+    <AdminSubNav />
+
     <div class="min-h-screen bg-gray-50 p-6">
       <div class="max-w-4xl mx-auto space-y-8">
         <!-- Roles -->
@@ -152,6 +154,7 @@
 import { computed, reactive, ref } from "vue";
 import { Link } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import AdminSubNav from "@/Components/Admin/AdminSubNav.vue";
 import InputLabel from "@/Components/InputLabel.vue";
 import PermissionBadge from "@/Components/PermissionBadge.vue";
 import { useNotifications } from "@/Composables/UI/useNotifications";

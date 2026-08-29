@@ -1,21 +1,18 @@
 /**
  * @file useNotifications.js
- * @description Abstracted notification service overlay layer isolating visual component system behaviors.
+ * @description Thin wrapper around SweetAlert2 for the app's four notification patterns:
+ * a blocking alert, an auto-dismissing toast, a destructive-action confirmation, and a
+ * timed toast variant.
  */
 
 import Swal from "sweetalert2";
 
-/**
- * @description Encapsulates application global notification workflows.
- * @returns {Object} An API interface containing modal, flash toast, confirmation, and timed notify services.
- */
 export function useNotifications() {
     /**
-     * @description Spawns a structural confirmation modal to inform user of an isolated process resolution.
-     * @param {string} title - The prominent header description text.
-     * @param {string} text - Detailed explanation message content body.
-     * @param {string} [icon="success"] - Design token layout icon status indicator (success, error, warning).
-     * @returns {void}
+     * Blocking alert dialog the user must dismiss.
+     * @param {string} title
+     * @param {string} text
+     * @param {string} [icon="success"] - "success" | "error" | "warning" | "info" | "question"
      */
     const notify = (title, text, icon = "success") => {
         Swal.fire({
@@ -27,10 +24,9 @@ export function useNotifications() {
     };
 
     /**
-     * @description Renders a swift non-blocking overhead toast notice which automatically unmounts.
-     * @param {string} message - The notification context to display.
-     * @param {string} [icon="success"] - Visual status accent identifier token.
-     * @returns {void}
+     * Non-blocking toast, top-right, auto-dismisses after 3s.
+     * @param {string} message
+     * @param {string} [icon="success"]
      */
     const toast = (message, icon = "success") => {
         const Toast = Swal.mixin({
@@ -44,11 +40,11 @@ export function useNotifications() {
     };
 
     /**
-     * @description Interrupts normal flows to display a high-severity confirm dialog before execution of critical features.
-     * @param {Function} callback - The executable business logic function deferred until confirmation.
-     * @param {string} [title="Are you sure?"] - Prompt statement title header.
-     * @param {string} [text="You won't be able to revert this!"] - Safety warning message body.
-     * @returns {void}
+     * Confirmation dialog for destructive actions — callback only runs if the user
+     * confirms.
+     * @param {Function} callback
+     * @param {string} [title="Are you sure?"]
+     * @param {string} [text="You won't be able to revert this!"]
      */
     const confirmAction = (
         callback,
@@ -71,12 +67,12 @@ export function useNotifications() {
     };
 
     /**
-     * @description Fires a transient auto-dismissing toast monitor overlay utilizing tracking progress visualization bars.
-     * @param {string} title - Prompt title identifier header.
-     * @param {string} text - Safety context notification body.
-     * @param {number} timer - Runtime duration lifecycle tracker value in milliseconds.
-     * @param {string} [icon="success"] - System status design display indicator token.
-     * @returns {void}
+     * Toast variant with a caller-controlled duration, for cases where the default 3s
+     * in toast() isn't appropriate (e.g. a longer warning that needs more read time).
+     * @param {string} title
+     * @param {string} text
+     * @param {number} timer - Milliseconds.
+     * @param {string} [icon="success"]
      */
     const TimerSwal = (title, text, timer, icon = "success") => {
         Swal.fire({

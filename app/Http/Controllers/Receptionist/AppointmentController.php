@@ -32,19 +32,32 @@ class AppointmentController extends Controller
             $query->where('status', $request->input('status'));
         }
 
+        // Smart Search by Patient Name or Patient-ID
         if ($request->filled('search')) {
             $search = (string) $request->input('search');
+
+            // Lock conditions for security other searchs service
             $query->where(static function ($mainQuery) use ($search): void {
+
+                // Search in Patient data.
                 $mainQuery->whereHas('patient.user', static function ($q) use ($search): void {
                     $q->where('first_name', 'like', "%{$search}%")
                         ->orWhere('middle_name', 'like', "%{$search}%")
                         ->orWhere('last_name', 'like', "%{$search}%")
                         ->orWhere('identity_number', 'like', "%{$search}%");
+
+                    // Serach in Doctor data
                 })->orWhereHas('doctor.user', static function ($q) use ($search): void {
                     $q->where('first_name', 'like', "%{$search}%")
                         ->orWhere('middle_name', 'like', "%{$search}%")
                         ->orWhere('last_name', 'like', "%{$search}%");
                 });
+            });
+        }
+
+        if ($request->filled('invoice_status') && $request->invoice_status !== 'all') {
+            $query->whereHas('invoice', function ($q) use ($request) {
+                $q->where('status', $request->invoice_status);
             });
         }
 

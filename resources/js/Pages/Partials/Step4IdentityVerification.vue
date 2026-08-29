@@ -4,9 +4,8 @@ import InputError from "@/Components/InputError.vue";
 
 const props = defineProps({
   form: Object,
-  aiStatus: String,
-  scanProgress: Number,
-  scanMessage: String,
+  uploadStatus: String,
+  uploadProgress: Number,
   identityPreview: String,
   profilePreview: String,
   isDragging: Boolean,
@@ -33,7 +32,7 @@ const profileInput = ref(null);
       <div class="flex items-center justify-between w-full mb-4">
         <label class="text-sm font-semibold text-gray-700">National ID Card</label>
         <span
-          v-if="aiStatus === 'success'"
+          v-if="uploadStatus === 'done'"
           class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full uppercase tracking-widest"
         >
           <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -49,7 +48,7 @@ const profileInput = ref(null);
 
       <div class="relative w-full">
         <div
-          @click="aiStatus !== 'scanning' ? identityInput.click() : null"
+          @click="uploadStatus !== 'reading' ? identityInput.click() : null"
           @dragover.prevent="$emit('update:isDragging', true)"
           @dragleave.prevent="$emit('update:isDragging', false)"
           @drop.prevent="handleDrop($event, 'identity_photo')"
@@ -59,27 +58,27 @@ const profileInput = ref(null);
               ? 'border-indigo-500 bg-indigo-50 scale-[1.01]'
               : 'border-gray-300 hover:border-indigo-400 hover:bg-indigo-50',
             identityPreview ? 'border-indigo-500 shadow-inner' : '',
-            aiStatus === 'success' ? 'border-green-500 ring-4 ring-green-50' : '',
+            uploadStatus === 'done' ? 'border-green-500 ring-4 ring-green-50' : '',
           ]"
         >
           <div v-if="identityPreview" class="relative w-full h-full bg-gray-900">
             <img :src="identityPreview" class="w-full h-full object-contain opacity-90" />
 
             <div
-              v-if="aiStatus === 'scanning'"
+              v-if="uploadStatus === 'reading'"
               class="absolute inset-0 bg-indigo-900 bg-opacity-40"
             >
               <div
                 class="absolute left-0 w-full h-0.5 bg-cyan-400 shadow-[0_0_15px_3px_rgba(34,211,238,0.8)]"
-                :style="{ top: `${scanProgress}%` }"
+                :style="{ top: `${uploadProgress}%` }"
               ></div>
               <div
                 class="absolute inset-0 flex flex-col items-center justify-center text-center p-4"
               >
-                <span class="text-cyan-300 text-xs font-mono font-bold">{{
-                  scanMessage
-                }}</span>
-                <span class="text-white font-mono text-sm mt-1">{{ scanProgress }}%</span>
+                <span class="text-cyan-300 text-xs font-mono font-bold">Uploading…</span>
+                <span class="text-white font-mono text-sm mt-1"
+                  >{{ uploadProgress }}%</span
+                >
               </div>
             </div>
           </div>
@@ -106,7 +105,7 @@ const profileInput = ref(null);
         </div>
 
         <button
-          v-if="identityPreview && aiStatus !== 'scanning'"
+          v-if="identityPreview && uploadStatus !== 'reading'"
           @click.stop="removeFile('identity_photo')"
           class="absolute -top-3 -right-3 bg-white text-red-500 border p-1.5 rounded-full shadow-lg z-20"
         >

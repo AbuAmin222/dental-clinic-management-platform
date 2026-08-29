@@ -1,12 +1,12 @@
 /**
  * @file validationRules.js
- * @description Pure validation runtime context decoupled from UI logic, enforcing strict domain invariants.
+ * @description Client-side validation for the multi-step registration wizard, kept
+ * separate from the Vue components so it can be unit-tested without mounting anything.
+ * This mirrors the server's validation for immediate feedback — the server-side Form
+ * Requests remain the actual source of truth and re-validate everything regardless.
  */
 
-/**
- * @type {Readonly<Object>}
- * @description Centralized evaluation regex patterns enforcing syntax specifications.
- */
+/** @type {Readonly<Object<string, RegExp>>} */
 export const patterns = Object.freeze({
     onlyNumber: /^\d+$/,
     email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -16,48 +16,31 @@ export const patterns = Object.freeze({
 });
 
 /**
- * @description Validates if a specific date parameter sits safely inside the historical past.
- * @param {string|Date} date - The evaluation date entity.
- * @returns {boolean} True if the date represents a valid past point in time.
+ * @param {string|Date} date
+ * @returns {boolean} True if date is a real date strictly before today.
  */
 export const isValidDate = (date) => date && new Date(date) < new Date();
 
 /**
- * @description Hard safety bounds checking to prevent non-realistic historical date entry.
- * @param {string|Date} date - The evaluation date entity.
- * @returns {boolean} True if the birthdate provided is unrealistically older than 1920-12-30.
+ * Rejects unrealistic birthdates (anything before 1920-12-30) — a basic sanity bound, not
+ * a real age-eligibility rule.
+ * @param {string|Date} date
+ * @returns {boolean}
  */
 export const isDateOverride = (date) =>
     date && new Date(date) < new Date("1920-12-30");
 
-/**
- * @description Internal decoupled validation helper attaching structured errors into current form context.
- * @param {Object} form - The current active Inertia form tracker object.
- * @param {string} field - The specific domain property identifier string.
- * @param {string} msg - The error notification description text string.
- * @returns {void}
- * @requires Inertia Form instance setError operational capability hook.
- */
 const setError = (form, field, msg) => {
     form.setError(field, msg);
 };
 
-/**
- * @description Verifies user selected an identity role class boundary context.
- * @param {Object} form - The current active form tracker instance.
- * @returns {boolean} True if no structural errors are currently active inside the instance scope.
- */
+/** Step 1: account type must be chosen. @param {Object} form @returns {boolean} */
 export const roleChoice = (form) => {
     if (!form.role) setError(form, "role", "Please select an account type.");
     return !form.hasErrors;
 };
 
-/**
- * @description Enforces strict evaluation constraints on core user personal credentials.
- * @param {Object} form - The current active form tracker instance.
- * @returns {boolean} True if core personal attributes bypass structural criteria validation filters.
- * @requires patterns.identity evaluation schema.
- */
+/** Step 2: name, national ID, date of birth, gender. @param {Object} form @returns {boolean} */
 export const personalInfo = (form) => {
     if (!form.first_name)
         setError(form, "first_name", "First name is required.");
@@ -76,12 +59,7 @@ export const personalInfo = (form) => {
     return !form.hasErrors;
 };
 
-/**
- * @description Evaluates connection coordinates, access identifiers, and standard communication schemas.
- * @param {Object} form - The current active form tracker instance.
- * @returns {boolean} True if all communication and safety check constraints evaluate perfectly.
- * @requires patterns.email and patterns.phone tracking criteria.
- */
+/** Step 3: username, email, password, phone, address. @param {Object} form @returns {boolean} */
 export const contactInfo = (form) => {
     if (!form.username) setError(form, "username", "Username is required.");
     if (!patterns.email.test(form.email))
@@ -100,11 +78,7 @@ export const contactInfo = (form) => {
     return !form.hasErrors;
 };
 
-/**
- * @description Verifies complete inclusion of binary physical security assets and portrait identification media.
- * @param {Object} form - The current active form tracker instance.
- * @returns {boolean} True if required document files are structurally mapped inside memory.
- */
+/** Step 4: identity + profile photo must both be attached. @param {Object} form @returns {boolean} */
 export const identityInfo = (form) => {
     if (!form.identity_photo)
         setError(form, "identity_photo", "Identity photo is required.");
@@ -114,8 +88,8 @@ export const identityInfo = (form) => {
 };
 
 /**
- * @type {Readonly<Object>}
- * @description Isolated Strategy sub-registry context mapping deep specialized verification rules per core user role.
+ * Final-step rules, one per role — only the block matching form.role runs.
+ * @type {Readonly<Object<string, (form: Object) => boolean>>}
  */
 export const roleSpecificRules = Object.freeze({
     patient: (form) => {
@@ -189,10 +163,10 @@ export const roleSpecificRules = Object.freeze({
     },
 });
 
-/**
- * @type {Readonly<Object>}
- * @description Open-Closed Step strategy mapping registry handling decoupled step evaluations without conditional fallback logic.
- */
+// Maps wizard step number -> validator for that step. Steps 5-7 all resolve to the same
+// role-specific rules because different roles reach the "final step" at different step
+// numbers (see ROLE_MAX_STEPS in useRegisterForm.js) — whichever number the wizard lands
+// on for the final step, this falls through to the correct per-role rules.
 const STEP_VALIDATORS = Object.freeze({
     1: roleChoice,
     2: personalInfo,
@@ -204,11 +178,10 @@ const STEP_VALIDATORS = Object.freeze({
 });
 
 /**
- * @description Evaluates active user data inputs Contextually based on the system wizard navigation index.
- * @param {Object} form - The current active form tracker instance.
- * @param {number} currentStep - The numeric pointer location index of the wizard layout.
- * @returns {boolean} True if the targeted milestone validation constraints pass cleanly.
- * @requires STEP_VALIDATORS state registry mapping.
+ * Validates only the current wizard step (clears prior errors first).
+ * @param {Object} form
+ * @param {number} currentStep
+ * @returns {boolean}
  */
 export const validateByRole = (form, currentStep) => {
     form.clearErrors();
@@ -217,9 +190,11 @@ export const validateByRole = (form, currentStep) => {
 };
 
 /**
- * @description Performs an un-chunked, complete structural compilation data validation sweep useful for monolithic flat forms.
- * @param {Object} form - The current active form tracker instance.
- * @returns {boolean} True if the holistic entity identity attributes align perfectly to definitions.
+ * Validates personal info + contact info + role-specific fields in one pass. Used by
+ * flat (non-wizard) forms such as receptionist-side patient registration, where all
+ * fields are on a single screen instead of split across steps.
+ * @param {Object} form
+ * @returns {boolean}
  */
 export const validatePatientInfo = (form) => {
     form.clearErrors();

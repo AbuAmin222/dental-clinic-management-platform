@@ -50,8 +50,9 @@ class PatientController extends Controller
         $telemetry = DashboardTelemetryFactory::make('patient')->getTelemetry(Auth::user());
 
         return Inertia::render('Patient/Dashboard', [
-            'patient' => $telemetry['patient'],
+            'patient'  => $telemetry['patient'],
             'status'   => $telemetry['metrics'],
+            'invoices' => $telemetry['patient']?->invoices ?? [],
         ]);
     }
 

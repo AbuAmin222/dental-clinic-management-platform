@@ -58,19 +58,6 @@
           </div>
         </div>
 
-        <p
-          v-if="isEditMode && !hadPreloadedItems"
-          class="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-2xl p-3 mb-4 leading-relaxed"
-        >
-          This invoice already exists, but Receptionist\InvoiceController::create() does
-          not eager-load the <code>items</code> relation on the <code>invoice</code> prop
-          it passes to this page — so previously saved line items cannot be pre-filled
-          here. The line-item list below starts empty; submitting will replace the
-          invoice's items with whatever you add here. Ask a developer to add
-          <code>->load('items')</code> (or eager-load it in the Controller query) to
-          enable proper editing.
-        </p>
-
         <!-- Invoice Form Core -->
         <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
           <form @submit.prevent="submit" class="space-y-6">
@@ -405,6 +392,13 @@ const deleteInvoice = () => {
 };
 
 const submit = () => {
+  // Synchronous guard: closes the tiny window where a very fast double-click
+  // could fire twice before Vue re-renders the button's `disabled` attribute
+  // from form.processing. This check happens before any reactivity/render cycle.
+  if (form.processing) {
+    return;
+  }
+
   const payload = {
     items: form.items.map((item) => ({
       pricing_id: item.pricing_id,

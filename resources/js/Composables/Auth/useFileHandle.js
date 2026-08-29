@@ -1,73 +1,45 @@
 /**
  * @file useFileHandle.js
- * @description Advanced file pipeline asset manager handling drag-and-drop actions, structural limits validation, and diagnostic preview flows.
+ * @description Handles file selection (click and drag-and-drop), client-side size
+ * validation, and preview generation for the three file fields used in registration:
+ * identity photo, profile photo, and X-ray images.
  */
 
 import { ref } from "vue";
 
+const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
+
 /**
- * @description Encapsulates upload handling logic and structural validation constraints for application document assets.
- * @param {Object} form - Active state tracker tracking transactional binary files fields.
- * @param {Function|null} [notify=null] - Optional error notification engine capability hook.
- * @returns {Object} Unified operational methods and reactive file stream metadata monitors.
+ * @param {Object} form - The active Inertia form object; selected files are written
+ *   directly onto its matching field (e.g. form.profile_photo).
+ * @param {Function|null} [notify=null] - Optional (title, message, type) notifier. Falls
+ *   back to a native alert() if not provided.
+ * @returns {Object} Reactive preview/progress state plus handleFileUpload, handleDrop,
+ *   and removeFile methods.
  */
 export function useFileHandle(form, notify = null) {
     const isDragging = ref(false);
-    const aiStatus = ref("idle");
-    const scanProgress = ref(0);
-    const scanMessage = ref("");
+
+    // Purely a client-side "file is being read into memory" indicator — this does NOT
+    // contact any server, and nothing here verifies identity or checks a database.
+    // Earlier versions of this composable simulated fake steps like "Extracting Identity
+    // Number..." and "Verifying with Database..." with a setInterval, which looked like
+    // real verification was happening when none was. Renamed and reworded to be honest
+    // about what's actually going on: a local file read.
+    const uploadStatus = ref("idle"); // 'idle' | 'reading' | 'done'
+    const uploadProgress = ref(0);
 
     const identityPreview = ref(null);
     const profilePreview = ref(null);
     const xrayPreview = ref(null);
 
-    const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
-
-    /**
-     * @description Simulates async medical asset analytical scanner tracking pipelines.
-     * @param {string|null} [type=null] - Structural category mapping tag (e.g. "xray").
-     * @returns {void}
-     * @requires Asynchronous background execution runtime via setInterval cycles.
-     */
-    const simulateAIValidation = (type = null) => {
-        aiStatus.value = "scanning";
-        scanProgress.value = 0;
-
-        const steps =
-            type === "xray"
-                ? [
-                      "Uploading image...",
-                      "Checking file integrity...",
-                      "Attaching to patient record...",
-                      "Upload complete!",
-                  ]
-                : [
-                      "Detecting ID Card...",
-                      "Extracting Identity Number...",
-                      "Verifying with Database...",
-                      "Success!",
-                  ];
-
-        let stepIndex = 0;
-        const interval = setInterval(() => {
-            scanProgress.value += 25;
-            scanMessage.value = steps[stepIndex] || "Finalizing...";
-            stepIndex++;
-
-            if (scanProgress.value >= 100) {
-                clearInterval(interval);
-                aiStatus.value = "success";
-            }
-        }, 350);
+    const previewRefForField = (field) => {
+        if (field === "profile_photo") return profilePreview;
+        if (field === "identity_photo") return identityPreview;
+        if (field === "xray_image") return xrayPreview;
+        return null;
     };
 
-    /**
-     * @description Core execution controller validating binary constraints, binding raw blobs, and mapping base64 tracking monitors.
-     * @param {File} file - Raw File object intercept caught off interface interactions.
-     * @param {string} field - Target system attribute property target name.
-     * @returns {void}
-     * @requires FileReader infrastructure runtime engine interface modules.
-     */
     const processFile = (file, field) => {
         if (!file) return;
 
@@ -81,18 +53,34 @@ export function useFileHandle(form, notify = null) {
         }
 
         form[field] = file;
+
+        const preview = previewRefForField(field);
+        if (!preview) return;
+
+        uploadStatus.value = "reading";
+        uploadProgress.value = 0;
+
         const reader = new FileReader();
 
-        reader.onload = (e) => {
-            if (field === "profile_photo")
-                profilePreview.value = e.target.result;
-            if (field === "identity_photo") {
-                identityPreview.value = e.target.result;
-                simulateAIValidation();
+        reader.onprogress = (event) => {
+            if (event.lengthComputable) {
+                uploadProgress.value = Math.round(
+                    (event.loaded / event.total) * 100,
+                );
             }
-            if (field === "xray_image") {
-                xrayPreview.value = e.target.result;
-                simulateAIValidation("xray");
+        };
+
+        reader.onload = (event) => {
+            preview.value = event.target.result;
+            uploadProgress.value = 100;
+            uploadStatus.value = "done";
+        };
+
+        reader.onerror = () => {
+            uploadStatus.value = "idle";
+            uploadProgress.value = 0;
+            if (notify) {
+                notify("Read Failed", "Could not read the selected file.", "error");
             }
         };
 
@@ -100,10 +88,8 @@ export function useFileHandle(form, notify = null) {
     };
 
     /**
-     * @description Proxy bridge method passing files extracted from traditional visual input node interactions.
-     * @param {Event} e - Native UI HTML selection change event.
-     * @param {string} field - System target attribute parameter key indicator.
-     * @returns {void}
+     * @param {Event} e - The native <input type="file"> change event.
+     * @param {string} field - Target form field name (e.g. "profile_photo").
      */
     const handleFileUpload = (e, field) => {
         if (e.target.files && e.target.files[0]) {
@@ -112,10 +98,8 @@ export function useFileHandle(form, notify = null) {
     };
 
     /**
-     * @description Intercepts binary document dumps triggered via drag and drop user interface layouts.
-     * @param {DragEvent} e - Interactive viewport drag event.
-     * @param {string} field - Target mapping field parameter token.
-     * @returns {void}
+     * @param {DragEvent} e - The native drop event.
+     * @param {string} field - Target form field name.
      */
     const handleDrop = (e, field) => {
         isDragging.value = false;
@@ -125,30 +109,20 @@ export function useFileHandle(form, notify = null) {
     };
 
     /**
-     * @description Flushes reactive storage targets, purging binary items and clearing view display placeholders cleanly.
-     * @param {string} field - Targeted attribute data key designated for extraction removal.
-     * @returns {void}
+     * @param {string} field - Target form field name to clear.
      */
     const removeFile = (field) => {
         form[field] = null;
-        if (field === "identity_photo") {
-            identityPreview.value = null;
-            aiStatus.value = "idle";
-            scanProgress.value = 0;
-        }
-        if (field === "profile_photo") profilePreview.value = null;
-        if (field === "xray_image") {
-            xrayPreview.value = null;
-            aiStatus.value = "idle";
-            scanProgress.value = 0;
-        }
+        const preview = previewRefForField(field);
+        if (preview) preview.value = null;
+        uploadStatus.value = "idle";
+        uploadProgress.value = 0;
     };
 
     return {
         isDragging,
-        aiStatus,
-        scanProgress,
-        scanMessage,
+        uploadStatus,
+        uploadProgress,
         identityPreview,
         profilePreview,
         xrayPreview,

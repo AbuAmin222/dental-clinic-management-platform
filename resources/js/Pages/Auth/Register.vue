@@ -36,9 +36,8 @@ const {
   today,
 
   isDragging,
-  aiStatus,
-  scanProgress,
-  scanMessage,
+  uploadStatus,
+  uploadProgress,
   identityPreview,
   profilePreview,
   handleFileUpload,
@@ -173,9 +172,8 @@ const handleRegister = () => {
           <Step4IdentityVerification
             v-if="step === 4"
             :form="form"
-            :aiStatus="aiStatus"
-            :scanProgress="scanProgress"
-            :scanMessage="scanMessage"
+            :uploadStatus="uploadStatus"
+            :uploadProgress="uploadProgress"
             :identityPreview="identityPreview"
             :profilePreview="profilePreview"
             :isDragging="isDragging"

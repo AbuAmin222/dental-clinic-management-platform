@@ -36,7 +36,16 @@ class PatientDashboardTelemetry implements DashboardTelemetryInterface
         return [
             'patient' => $patientData,
             'metrics' => [
-                'total_appointments' => $patientData ? $patientData->appointments->count() : 0,
+                'total_appointments'   => $patientData ? $patientData->appointments->count() : 0,
+                'pending_appointments' => $patientData
+                    ? $patientData->appointments->where('status', 'pending')->count()
+                    : 0,
+                'total_treatments'     => $patientData
+                    ? $patientData->appointments->where('status', 'completed')->count()
+                    : 0,
+                'remaining_balance'    => $patientData
+                    ? $patientData->invoices->sum('balance_amount')
+                    : 0,
             ],
             'view_path' => 'Patient/Dashboard'
         ];

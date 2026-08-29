@@ -4,10 +4,10 @@
  */
 
 /**
- * @description Filters input values dynamically to strip out non-numeric characters.
- * @param {Event|string} input - The raw input event object or a direct string value.
- * @returns {string} A sanitized string containing purely numeric digits.
- * @requires Standard JavaScript regular expression engine.
+ * Strips everything except digits from an input, accepting either a raw string or an
+ * input/change event (reads event.target.value in that case).
+ * @param {Event|string} input
+ * @returns {string} Digits only.
  */
 export const filterNumbers = (input) => {
     const value =
@@ -18,10 +18,8 @@ export const filterNumbers = (input) => {
 };
 
 /**
- * @description Calculates the precise current age based on a given birthdate.
- * @param {string|Date} birthday - The date of birth string or Date object.
- * @returns {number|string} The calculated age as an integer, or an empty string if input is invalid.
- * @requires Native Date object and timestamp manipulation.
+ * @param {string|Date} birthday
+ * @returns {number|string} Age in whole years, or "" if birthday is missing/invalid.
  */
 export const calculateAge = (birthday) => {
     if (!birthday) return "";
@@ -34,21 +32,21 @@ export const calculateAge = (birthday) => {
 };
 
 /**
- * @description Retrieves the current calendar date formatted to ISO standards.
- * @returns {string} The current date string formatted as YYYY-MM-DD.
- * @requires Native standard Date string partitioning.
+ * @returns {string} Today's date as YYYY-MM-DD, for use as a native <input type="date"> min/max.
  */
 export const today = () => new Date().toISOString().split("T")[0];
 
 /**
- * @description Formats raw numeric values into localized currency presentation strings.
- * @param {number|string} value - The raw financial figure to format.
- * @param {string} [currency="USD"] - The standard three-letter ISO currency code.
- * @param {string} [locale="en-US"] - The regional locale identifier for layout structure.
- * @returns {string} The fully compiled localized currency string notation.
- * @requires Intl.NumberFormat localization API engine.
+ * Formats a numeric value as localized currency. Defaults to ILS/en-US because every
+ * money value in this system (invoices, pricing, salaries) is ILS — callers only need to
+ * override this when displaying a value known to be in a different currency (e.g. a raw
+ * PayPal amount before conversion).
+ * @param {number|string} value
+ * @param {string} [currency="ILS"] - ISO 4217 currency code.
+ * @param {string} [locale="en-US"] - Locale for digit grouping/symbol placement.
+ * @returns {string}
  */
-export function formatCurrency(value, currency = "USD", locale = "en-US") {
+export function formatCurrency(value, currency = "ILS", locale = "en-US") {
     const numericValue = Number(value);
     if (value === null || value === undefined || isNaN(numericValue)) {
         return new Intl.NumberFormat(locale, {
@@ -63,11 +61,11 @@ export function formatCurrency(value, currency = "USD", locale = "en-US") {
 }
 
 /**
- * @description High-performance debounce utility that delays function execution until a specific timeout has passed since the last call.
- * @param {Function} fn - The target core logic execution function to delay.
- * @param {number} delay - The execution cooldown period measured in milliseconds.
- * @returns {Function} A new closed state function tracking execution timeout intervals.
- * @requires Window timer handlers (setTimeout, clearTimeout).
+ * Delays calling fn until `delay` ms have passed since the last call — standard use is
+ * search-as-you-type inputs that shouldn't fire a request on every keystroke.
+ * @param {Function} fn
+ * @param {number} delay - Milliseconds.
+ * @returns {Function}
  */
 export function debounce(fn, delay) {
     let timeout;

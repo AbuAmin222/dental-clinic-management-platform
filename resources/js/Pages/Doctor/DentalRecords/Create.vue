@@ -19,9 +19,8 @@ const fileLogic = useFileHandle(form, notify);
 
 const {
   isDragging,
-  aiStatus,
-  scanProgress,
-  scanMessage,
+  uploadStatus,
+  uploadProgress,
   xrayPreview,
   handleFileUpload,
   handleDrop,
@@ -251,7 +250,7 @@ const submit = () => {
           </div>
 
           <div
-            v-else-if="aiStatus === 'scanning'"
+            v-else-if="uploadStatus === 'reading'"
             class="w-full max-w-xs space-y-4 text-center p-4"
           >
             <div class="relative pt-1">
@@ -260,12 +259,12 @@ const submit = () => {
                   <span
                     class="text-xs font-bold inline-block py-1 px-2.5 uppercase rounded-full text-indigo-600 bg-indigo-50"
                   >
-                    {{ scanMessage }}
+                    Uploading
                   </span>
                 </div>
                 <div class="text-left">
                   <span class="text-xs font-bold inline-block text-indigo-600">
-                    {{ scanProgress }}%
+                    {{ uploadProgress }}%
                   </span>
                 </div>
               </div>
@@ -273,7 +272,7 @@ const submit = () => {
                 class="overflow-hidden h-1.5 mb-4 text-xs flex rounded-full bg-slate-100"
               >
                 <div
-                  :style="{ width: scanProgress + '%' }"
+                  :style="{ width: uploadProgress + '%' }"
                   class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-600 transition-all duration-300 rounded-full"
                 ></div>
               </div>
@@ -284,7 +283,7 @@ const submit = () => {
           </div>
 
           <div
-            v-else-if="aiStatus === 'success'"
+            v-else-if="uploadStatus === 'done'"
             class="w-full flex flex-col items-center justify-center p-2 relative"
           >
             <div
