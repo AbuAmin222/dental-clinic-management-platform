@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Patient;
 
+use App\Enums\AppointmentStatus;
 use App\Exceptions\BusinessRuleViolationException;
 use App\Factories\Telemetry\DashboardTelemetryFactory;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Receptionist\StoreAppointmentRequest;
+use App\Http\Requests\Patient\StoreAppointmentRequest;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Invoice;
@@ -105,7 +106,12 @@ class PatientController extends Controller
         }
 
         try {
-            $this->bookingService->bookAppointment($request->validated(), $patient->id);
+            $status = AppointmentStatus::Pending->value;
+
+            $fullData = array_merge($request->validated(), [
+                'status' => $status
+            ]);
+            $this->bookingService->bookAppointment($fullData, $patient->id);
         } catch (BusinessRuleViolationException $e) {
             return back()->withErrors([
                 'start_time' => $e->getMessage(),

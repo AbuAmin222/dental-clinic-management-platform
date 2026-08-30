@@ -114,7 +114,13 @@ class AppointmentController extends Controller
     ): RedirectResponse {
         $this->authorize('create', Appointment::class);
 
-        $bookAppointmentAction->execute($request->validated());
+        $status = AppointmentStatus::Confirmed->value;
+
+        $fullData = array_merge($request->validated(), [
+            'status' => $status,
+        ]);
+
+        $bookAppointmentAction->execute($fullData);
 
         return redirect()
             ->route('receptionist.appointments.index')

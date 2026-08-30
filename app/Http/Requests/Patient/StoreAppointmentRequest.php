@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Requests\Receptionist;
+namespace App\Http\Requests\Patient;
 
+use App\Enums\AppointmentStatus;
 use App\Enums\UserRole;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -25,6 +26,10 @@ class StoreAppointmentRequest extends FormRequest
     {
         $mergeData = [];
 
+        if (!$this->has('status') && $patientId = $this->user()?->patient?->id && $this->status != AppointmentStatus::Pending->value) {
+            $mergeData['status'] = AppointmentStatus::Pending->value;
+        }
+
         // 1. Context Resolution: Auto-inject patient_id if missing (e.g., Patient Portal)
         if (!$this->has('patient_id') && $patientId = $this->user()?->patient?->id) {
             $mergeData['patient_id'] = $patientId;
@@ -32,11 +37,11 @@ class StoreAppointmentRequest extends FormRequest
 
         // 2. Format Normalization: Ensure H:i:s format
         if ($this->has('start_time') && is_string($this->start_time)) {
+
             if (preg_match('/^\d{2}:\d{2}$/', $this->start_time)) {
                 $mergeData['start_time'] = $this->start_time . ':00';
             }
         }
-
         if (!empty($mergeData)) {
             $this->merge($mergeData);
         }

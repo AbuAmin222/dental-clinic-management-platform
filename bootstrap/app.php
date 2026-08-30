@@ -30,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'account-security.completed' => EnsureAccountSecurityCompleted::class,
 
         ]);
+        $middleware->statefulApi();
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
