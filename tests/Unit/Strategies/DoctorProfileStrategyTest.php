@@ -105,6 +105,6 @@ class DoctorProfileStrategyTest extends TestCase
 
         $this->strategy->delete($user);
 
-        $this->assertDatabaseMissing('doctors', ['user_id' => $user->id]);
+        $this->assertSoftDeleted('doctors', ['user_id' => $user->id]);
     }
 }

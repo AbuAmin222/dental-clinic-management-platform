@@ -27,9 +27,9 @@ class SalaryPaymentTest extends TestCase
         $payment = SalaryPayment::create([
             'user_id' => $user->id,
             'processed_by_financial_id' => null,
-            'base_amount' => 500000,
-            'deduction_amount' => 50000,
-            'bonus_amount' => 25000,
+            'base_amount' => 5000.0,
+            'deduction_amount' => 500.0,
+            'bonus_amount' => 250.0,
             'pay_period_start' => '2025-01-01',
             'pay_period_end' => '2025-01-31',
             'status' => SalaryPaymentStatus::Approved,
@@ -37,7 +37,7 @@ class SalaryPaymentTest extends TestCase
 
         $payment = $payment->fresh();
 
-        $this->assertSame(475000, $payment->getRawOriginal('amount'));
+        $this->assertSame(475000, (int) $payment->getRawOriginal('amount'));
     }
 
     #[Test]
@@ -47,15 +47,15 @@ class SalaryPaymentTest extends TestCase
 
         $payment = SalaryPayment::create([
             'user_id' => $user->id,
-            'base_amount' => 100000,
-            'deduction_amount' => 20000,
-            'bonus_amount' => 10000,
+            'base_amount' => 1000.0,
+            'deduction_amount' => 200.0,
+            'bonus_amount' => 100.0,
             'pay_period_start' => '2025-01-01',
             'pay_period_end' => '2025-01-31',
             'status' => SalaryPaymentStatus::Approved,
         ]);
 
-        $this->assertSame(90000, $payment->getRawOriginal('amount'));
+        $this->assertSame(90000, (int) $payment->getRawOriginal('amount'));
     }
 
     #[Test]
@@ -64,18 +64,18 @@ class SalaryPaymentTest extends TestCase
         $user = User::factory()->create();
         $payment = SalaryPayment::create([
             'user_id' => $user->id,
-            'base_amount' => 50000,
-            'deduction_amount' => 5000,
-            'bonus_amount' => 2500,
+            'base_amount' => 500.0,
+            'deduction_amount' => 50.0,
+            'bonus_amount' => 25.0,
             'pay_period_start' => '2025-01-01',
             'pay_period_end' => '2025-01-31',
             'status' => SalaryPaymentStatus::Pending,
         ]);
 
-        $this->assertSame(500.00, $payment->base_amount);
-        $this->assertSame(50.00, $payment->deduction_amount);
-        $this->assertSame(25.00, $payment->bonus_amount);
-        $this->assertSame(475.00, $payment->amount);
+        $this->assertSame(500.0, $payment->base_amount);
+        $this->assertSame(50.0, $payment->deduction_amount);
+        $this->assertSame(25.0, $payment->bonus_amount);
+        $this->assertSame(475.0, $payment->amount);
     }
 
     #[Test]

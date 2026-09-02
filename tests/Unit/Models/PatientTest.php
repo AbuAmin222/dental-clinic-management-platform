@@ -23,7 +23,7 @@ class PatientTest extends TestCase
     {
         $patient = Patient::factory()->create(['blood_group' => 'O+']);
 
-        $this->assertEquals(BloodGroup::OPositive, $patient->blood_group);
+        $this->assertSame('O+', $patient->blood_group);
     }
 
     #[Test]

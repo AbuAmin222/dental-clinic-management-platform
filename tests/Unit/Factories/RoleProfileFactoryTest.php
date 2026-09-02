@@ -10,13 +10,14 @@ use App\Strategies\Profile\DoctorProfileStrategy;
 use App\Strategies\Profile\FinancialProfileStrategy;
 use App\Strategies\Profile\PatientProfileStrategy;
 use App\Strategies\Profile\ReceptionistProfileStrategy;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class RoleProfileFactoryTest extends TestCase
 {
+    use RefreshDatabase;
     #[Test]
     public function make_returns_doctor_profile_strategy(): void
     {

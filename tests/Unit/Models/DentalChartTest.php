@@ -53,7 +53,7 @@ class DentalChartTest extends TestCase
 
         $updated = DentalChart::upsertForTooth($patientId, $doctorId, 5, 'Filled', 'New notes');
 
-        $this->assertDatabaseCount(1, DentalChart::where('patient_id', $patientId)->where('tooth_number', 5)->get());
+        $this->assertDatabaseCount('dental_charts', 1);
         $this->assertSame('Filled', $updated->fresh()->condition);
         $this->assertSame('New notes', $updated->fresh()->notes);
     }

@@ -37,7 +37,7 @@ class CancelledStateTest extends TestCase
     {
         $state = new CancelledState();
 
-        $state->onEnter($this->createMock(Invoice::class));
+        $state->onEnter($this->createMock(\App\Models\Invoice::class));
 
         $this->assertTrue(true);
     }

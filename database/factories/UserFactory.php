@@ -33,6 +33,8 @@ class UserFactory extends Factory
             'first_name' => fake()->firstName(),
             'middle_name' => fake()->firstName('male'),
             'last_name' => fake()->lastName(),
+
+            'username' => fake()->unique()->userName(),
             'email' => fake()->unique()->safeEmail(),
             'identity_number' => $identityNumber,
             'phone' => fake()->phoneNumber(),

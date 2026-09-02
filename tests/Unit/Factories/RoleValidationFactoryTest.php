@@ -10,12 +10,14 @@ use App\Strategies\Validation\DoctorValidationRules;
 use App\Strategies\Validation\PatientValidationRules;
 use App\Strategies\Validation\ReceptionistValidationRules;
 use App\Strategies\Validation\FinancialValidationRules;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class RoleValidationFactoryTest extends TestCase
 {
+    use RefreshDatabase;
     #[Test]
     public function make_returns_doctor_validation_rules(): void
     {

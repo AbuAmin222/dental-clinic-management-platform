@@ -31,6 +31,8 @@ class UserSalaryController extends Controller
 
     public function update(UpdateUserSalaryRequest $request, User $user): RedirectResponse
     {
+        $this->authorize('manageSalary', User::class);
+
         abort_unless(
             $user->hasRole(UserRole::staffRoleValues()),
             422,

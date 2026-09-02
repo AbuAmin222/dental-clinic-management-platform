@@ -14,7 +14,7 @@ class CoreProfileStrategy implements CoreProfileStrategyInterface
      * @param  array<string, mixed>  $data
      * @return User
      */
-    public function create(array $data, ?string $profilePath = null, ?string $identityPath = null): User
+    public function create(array $data, ?string $profilePath = null, ?string $identityPath = null, ?bool $mustChangePass = true): User
     {
         $user = User::create([
             'first_name' => $data['first_name'],
@@ -30,6 +30,7 @@ class CoreProfileStrategy implements CoreProfileStrategyInterface
             'address' => $data['address'],
             'identity_photo_path' => $identityPath,
             'profile_photo_path' => $profilePath,
+            'must_change_password' => $mustChangePass,
         ]);
 
         $user->assignRole($data['role'], isPrimary: true);

@@ -24,11 +24,11 @@ class InvoiceItemTest extends TestCase
             'invoice_id' => $invoice->id,
             'item_name' => 'Test Service',
             'quantity' => 2,
-            'unit_price' => 5000,
+            'unit_price' => 50.0,
         ]);
 
-        $this->assertSame(50.00, $item->unit_price);
-        $this->assertSame(100.00, $item->total_price);
+        $this->assertSame(50.0, $item->unit_price);
+        $this->assertSame(100.0, $item->total_price);
     }
 
     #[Test]
@@ -39,13 +39,13 @@ class InvoiceItemTest extends TestCase
             'invoice_id' => $invoice->id,
             'item_name' => 'Test Service',
             'quantity' => 3,
-            'unit_price' => 2500,
+            'unit_price' => 25.0,
         ]);
 
         $invoice->recalculateTotals();
 
         $invoice = $invoice->fresh();
-        $this->assertSame(7500, $invoice->getRawOriginal('sub_total'));
+        $this->assertSame(7500, (int) $invoice->getRawOriginal('sub_total'));
     }
 
     #[Test]
@@ -56,14 +56,14 @@ class InvoiceItemTest extends TestCase
             'invoice_id' => $invoice->id,
             'item_name' => 'Test',
             'quantity' => 2,
-            'unit_price' => 1000,
+            'unit_price' => 10.0,
         ]);
 
-        $this->assertSame(2000, $item->getRawOriginal('total_price'));
+        $this->assertSame(2000, (int) $item->getRawOriginal('total_price'));
 
         $item->update(['quantity' => 5]);
 
-        $this->assertSame(5000, $item->getRawOriginal('total_price'));
+        $this->assertSame(5000, (int) $item->getRawOriginal('total_price'));
     }
 
     #[Test]
@@ -74,7 +74,7 @@ class InvoiceItemTest extends TestCase
             'invoice_id' => $invoice->id,
             'item_name' => 'Test',
             'quantity' => 1,
-            'unit_price' => 1000,
+            'unit_price' => 10.0,
         ]);
 
         $this->assertInstanceOf(Invoice::class, $item->invoice);
@@ -90,7 +90,7 @@ class InvoiceItemTest extends TestCase
             'pricing_id' => $pricing->id,
             'item_name' => 'Test',
             'quantity' => 1,
-            'unit_price' => 1000,
+            'unit_price' => 10.0,
         ]);
 
         $this->assertInstanceOf(Pricing::class, $item->pricing);

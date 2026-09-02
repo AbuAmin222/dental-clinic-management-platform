@@ -43,6 +43,8 @@ class UserActivationController extends Controller
 
     public function activate(Request $request, User $user): RedirectResponse
     {
+        $this->authorize('activate', User::class);
+
         abort_if($user->is_active, 409, 'This account is already active.');
 
         $user->forceFill(['is_active' => true])->save();
@@ -54,6 +56,8 @@ class UserActivationController extends Controller
 
     public function reject(Request $request, User $user): RedirectResponse
     {
+        $this->authorize('activate', User::class);
+
         abort_if($user->is_active, 409, 'Cannot reject an already-active account.');
 
         $user->delete();
@@ -64,6 +68,8 @@ class UserActivationController extends Controller
     }
     public function update(UpdateUserActivationRequest $request, User $user): RedirectResponse
     {
+        $this->authorize('activate', User::class);
+
         $user->forceFill(['is_active' => $request->boolean('is_active')])->save();
 
         return redirect()

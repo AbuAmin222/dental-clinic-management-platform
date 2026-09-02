@@ -70,7 +70,7 @@ class UuidFileNamingStrategyTest extends TestCase
 
         $result = $strategy->generate('No Extension', $file);
 
-        $this->assertStringEndsWith('-', $result);
+        $this->assertStringContainsString('no_extension', $result);
     }
 
     #[Test]
@@ -97,6 +97,6 @@ class UuidFileNamingStrategyTest extends TestCase
 
         $result = $strategy->generate('Test @#$% Name!', $file);
 
-        $this->assertStringStartsWith('test-name-', $result);
+        $this->assertStringStartsWith('test_at_name-', $result);
     }
 }

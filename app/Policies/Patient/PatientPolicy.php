@@ -19,7 +19,7 @@ class PatientPolicy
     /**
      * Roles authorized to view generic index/listing views of patients.
      */
-    private const ALLOWED_VIEW_ANY_ROLES = [UserRole::Doctor->value, UserRole::Patient->value, UserRole::Receptionist->value];
+    private const ALLOWED_VIEW_ANY_ROLES = [UserRole::Doctor->value, UserRole::Patient->value, UserRole::Receptionist->value, UserRole::Financial->value];
 
     /**
      * Roles authorized to register a new patient profile.
@@ -35,7 +35,7 @@ class PatientPolicy
     public function viewAny(User $user): bool
     {
         trace_reach('PatientPolicy@viewAny', $user->only(['username', 'username']));
-        return $user->hasRole(self::ALLOWED_VIEW_ANY_ROLES);
+        return $user->hasRole(self::ALLOWED_VIEW_ANY_ROLES) && $user->hasPermissionTo('patients.viewAny');
     }
 
     /**
@@ -59,7 +59,7 @@ class PatientPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole(self::ALLOWED_CREATE_ROLES);
+        return $user->hasRole(self::ALLOWED_CREATE_ROLES) && $user->hasPermissionTo('patients.create');
     }
 
     /**
@@ -83,7 +83,7 @@ class PatientPolicy
      */
     public function delete(User $user, Patient $patient): bool
     {
-        return $user->hasRole(UserRole::Receptionist->value);
+        return $user->hasRole(UserRole::Receptionist->value) && $user->hasPermissionTo('patients.delete');
     }
 
     /**

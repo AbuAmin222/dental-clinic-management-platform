@@ -21,6 +21,7 @@ class PatientProfileStrategyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(\Database\Seeders\RoleSeeder::class);
         $this->strategy = new PatientProfileStrategy();
     }
 
@@ -42,7 +43,7 @@ class PatientProfileStrategyTest extends TestCase
         $patient = Patient::where('user_id', $user->id)->first();
 
         $this->assertNotNull($patient);
-        $this->assertSame(BloodGroup::from('O+'), $patient->blood_group);
+        $this->assertSame('O+', $patient->blood_group);
         $this->assertSame('Penicillin', $patient->allergies);
         $this->assertSame('Jane Doe', $patient->emergency_contact_name);
     }
@@ -63,7 +64,7 @@ class PatientProfileStrategyTest extends TestCase
 
         $patient = Patient::where('user_id', $user->id)->first();
 
-        $this->assertSame(BloodGroup::ABPositive, $patient->blood_group);
+        $this->assertSame('AB+', $patient->blood_group);
         $this->assertSame('Updated allergies', $patient->allergies);
     }
 

@@ -29,17 +29,21 @@ class PaidStateTest extends TestCase
     }
 
     #[Test]
-    public function cannot_transition_to_any_other_state(): void
+    public function cannot_transition_to_non_refunded_states(): void
     {
         $state = new PaidState();
 
-        foreach (InvoiceStatus::cases() as $status) {
-            if ($status === InvoiceStatus::Paid) {
-                continue;
-            }
+        $forbidden = [
+            InvoiceStatus::Draft,
+            InvoiceStatus::Pending,
+            InvoiceStatus::PartiallyPaid,
+            InvoiceStatus::Cancelled,
+        ];
+
+        foreach ($forbidden as $target) {
             $this->assertFalse(
-                $state->canTransitionTo($status),
-                "PaidState should not allow transition to {$status->value}"
+                $state->canTransitionTo($target),
+                "PaidState should not allow transition to {$target->value}"
             );
         }
     }

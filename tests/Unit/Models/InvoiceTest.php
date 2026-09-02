@@ -15,8 +15,6 @@ use App\Models\InvoiceItem;
 use App\Models\Patient;
 use App\States\Invoice\DraftState;
 use App\States\Invoice\InvoiceStateFactory;
-use App\States\Invoice\PaidState;
-use App\States\Invoice\PENDINGState;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -44,17 +42,17 @@ class InvoiceTest extends TestCase
     public function casts_money_fields_with_money_cast(): void
     {
         $invoice = Invoice::factory()->create([
-            'sub_total' => 1000,
-            'tax_amount' => 50,
-            'discount_amount' => 25,
-            'total_amount' => 1025,
-            'paid_amount' => 500,
-            'due_amount' => 525,
-            'balance_amount' => 525,
+            'sub_total' => 10.0,
+            'tax_amount' => 0.50,
+            'discount_amount' => 0.25,
+            'total_amount' => 10.25,
+            'paid_amount' => 5.0,
+            'due_amount' => 5.25,
+            'balance_amount' => 5.25,
         ]);
 
-        $this->assertSame(10.00, $invoice->sub_total);
-        $this->assertSame(0.50, $invoice->tax_amount);
+        $this->assertSame(10.0, $invoice->sub_total);
+        $this->assertSame(0.5, $invoice->tax_amount);
         $this->assertSame(0.25, $invoice->discount_amount);
         $this->assertSame(5.00, $invoice->paid_amount);
         $this->assertSame(5.25, $invoice->due_amount);
@@ -112,13 +110,13 @@ class InvoiceTest extends TestCase
     public function record_payment_marks_invoice_paid(): void
     {
         $invoice = Invoice::factory()->create([
-            'total_amount' => 10000,
-            'paid_amount' => 0,
-            'due_amount' => 10000,
+            'total_amount' => 100.0,
+            'paid_amount' => 0.0,
+            'due_amount' => 100.0,
             'status' => InvoiceStatus::Pending,
         ]);
 
-        $invoice->recordPayment(10000);
+        $invoice->recordPayment(100.0);
 
         $invoice = $invoice->fresh();
         $this->assertSame(InvoiceStatus::Paid, $invoice->status);
@@ -130,18 +128,18 @@ class InvoiceTest extends TestCase
     public function record_payment_marks_partial_payment(): void
     {
         $invoice = Invoice::factory()->create([
-            'total_amount' => 10000,
-            'paid_amount' => 0,
-            'due_amount' => 10000,
+            'total_amount' => 100.0,
+            'paid_amount' => 0.0,
+            'due_amount' => 100.0,
             'status' => InvoiceStatus::Pending,
         ]);
 
-        $invoice->recordPayment(5000);
+        $invoice->recordPayment(50.0);
 
         $invoice = $invoice->fresh();
         $this->assertSame(InvoiceStatus::PartiallyPaid, $invoice->status);
-        $this->assertSame(50.00, $invoice->paid_amount);
-        $this->assertSame(50.00, $invoice->due_amount);
+        $this->assertSame(50.0, $invoice->paid_amount);
+        $this->assertSame(50.0, $invoice->due_amount);
     }
 
     #[Test]
@@ -156,41 +154,41 @@ class InvoiceTest extends TestCase
             'invoice_id' => $invoice->id,
             'item_name' => 'Service 1',
             'quantity' => 2,
-            'unit_price' => 5000,
+            'unit_price' => 50.0,
         ]);
 
         InvoiceItem::create([
             'invoice_id' => $invoice->id,
             'item_name' => 'Service 2',
             'quantity' => 1,
-            'unit_price' => 3000,
+            'unit_price' => 30.0,
         ]);
 
         $invoice->recalculateTotals();
         $invoice = $invoice->fresh();
 
-        $this->assertSame(13000, $invoice->getRawOriginal('sub_total'));
+        $this->assertSame(13000, (int) $invoice->getRawOriginal('sub_total'));
     }
 
     #[Test]
     public function recalculate_totals_applies_tax_and_discount(): void
     {
         $invoice = Invoice::factory()->create([
-            'tax_amount' => 1000,
-            'discount_amount' => 500,
+            'tax_amount' => 10.0,
+            'discount_amount' => 5.0,
         ]);
 
         InvoiceItem::create([
             'invoice_id' => $invoice->id,
             'item_name' => 'Service',
             'quantity' => 1,
-            'unit_price' => 5000,
+            'unit_price' => 50.0,
         ]);
 
         $invoice->recalculateTotals();
         $invoice = $invoice->fresh();
 
-        $this->assertSame(5500, $invoice->getRawOriginal('total_amount'));
+        $this->assertSame(5500, (int) $invoice->getRawOriginal('total_amount'));
     }
 
     #[Test]

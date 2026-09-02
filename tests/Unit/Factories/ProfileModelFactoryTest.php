@@ -7,6 +7,7 @@ namespace Tests\Unit\Factories;
 use App\Factories\Model\ProfileModelFactory;
 use App\Models\Admin;
 use App\Models\Doctor;
+use App\Models\Financial;
 use App\Models\Patient;
 use App\Models\Receptionist;
 use Illuminate\Database\Eloquent\Model;

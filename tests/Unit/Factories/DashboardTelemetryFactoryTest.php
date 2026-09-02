@@ -10,12 +10,14 @@ use App\Services\Dashboard\DoctorDashboardTelemetry;
 use App\Services\Dashboard\FinancialDashboardTelemetry;
 use App\Services\Dashboard\PatientDashboardTelemetry;
 use App\Services\Dashboard\ReceptionistDashboardTelemetry;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class DashboardTelemetryFactoryTest extends TestCase
 {
+    use RefreshDatabase;
     #[Test]
     public function make_returns_doctor_dashboard_telemetry(): void
     {

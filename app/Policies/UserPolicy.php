@@ -32,7 +32,8 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(UserRole::Admin->value);
+        return $user->hasRole(UserRole::Admin->value)
+            && $user->hasPermissionTo('users.viewAny');
     }
 
     /**
@@ -40,7 +41,8 @@ class UserPolicy
      */
     public function view(User $user, User $target): bool
     {
-        return $user->hasRole(UserRole::Admin->value) || $user->id === $target->id;
+        return ($user->hasRole(UserRole::Admin->value) && $user->hasPermissionTo('users.view'))
+            || $user->id === $target->id;
     }
 
     /**
@@ -48,7 +50,8 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole(UserRole::Admin->value);
+        return $user->hasRole(UserRole::Admin->value)
+            && $user->hasPermissionTo('users.create');
     }
 
     /**
@@ -57,7 +60,8 @@ class UserPolicy
      */
     public function update(User $user, User $target): bool
     {
-        return $user->hasRole(UserRole::Admin->value) || $user->id === $target->id;
+        return ($user->hasRole(UserRole::Admin->value) && $user->hasPermissionTo('users.update'))
+            || $user->id === $target->id;
     }
 
     /**
@@ -67,10 +71,18 @@ class UserPolicy
      * SuperAdmin آخر، ولا يجوز أبداً حذف آخر SuperAdmin متبقٍّ في النظام — بدون هذا
      * القيد، حذف الحساب الوحيد صاحب `AdminAccessLevel::SuperAdmin` كان سيقفل كل مسارات
      * إدارة الأدوار/الصلاحيات في النظام بلا رجعة (لا أحد يملك صلاحية استعادتها بعدها).
+     *
+     * The `users.delete` permission is only required on the admin-acting-on-another
+     * branch; self-deletion of one's own account must never depend on the admin
+     * permission catalog, or a non-admin user could be locked out of closing their
+     * own account.
      */
     public function delete(User $user, User $target): bool
     {
-        if (! ($user->hasRole(UserRole::Admin->value) || $user->id === $target->id)) {
+        $isAdminActing = $user->hasRole(UserRole::Admin->value) && $user->hasPermissionTo('users.delete');
+        $isSelf = $user->id === $target->id;
+
+        if (! ($isAdminActing || $isSelf)) {
             return false;
         }
 
@@ -85,5 +97,31 @@ class UserPolicy
         }
 
         return true;
+    }
+
+    /**
+     * Determine whether the user can activate or reject a pending account
+     * (App\Http\Controllers\Admin\UserActivationController). Previously ungated by any
+     * Policy — only the route-level `role:admin` middleware protected these actions, so
+     * the seeded `users.activate` permission had no actual effect: any Admin could
+     * activate/reject/toggle any account regardless of whether that specific permission
+     * had been revoked from them via the RBAC UI.
+     */
+    public function activate(User $user): bool
+    {
+        return $user->hasRole(UserRole::Admin->value)
+            && $user->hasPermissionTo('users.activate');
+    }
+
+    /**
+     * Determine whether the user can set or update a staff member's base salary
+     * (App\Http\Controllers\Admin\UserSalaryController). Same gap as activate() above —
+     * was gated only by route-level `role:admin` middleware, so `users.manage_salary`
+     * was seeded but never actually checked.
+     */
+    public function manageSalary(User $user): bool
+    {
+        return $user->hasRole(UserRole::Admin->value)
+            && $user->hasPermissionTo('users.manage_salary');
     }
 }

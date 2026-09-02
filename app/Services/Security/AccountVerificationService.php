@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\Security;
 
+use App\Enums\UserRole;
 use App\Exceptions\BusinessRuleViolationException;
 use App\Models\User;
 use App\Notifications\PatientVerificationCodeNotification;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 /**
  * يطبّق الشطر الثاني من §2.ج في الوثيقة المعمارية: منع الوصول لأي خدمة عند أول دخول
@@ -85,6 +85,12 @@ class AccountVerificationService
      */
     public function requiresSecurityCompletion(User $user): bool
     {
+        $patientRole = UserRole::Patient->values();
+
+        // if ($user->hasRole($patientRole)) {
+        //     return $user->must_change_password;
+        // } else {
         return $user->must_change_password || $user->phone_verified_at === null;
+        // }
     }
 }

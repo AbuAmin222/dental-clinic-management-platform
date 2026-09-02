@@ -31,12 +31,12 @@ class PaymentTransactionTest extends TestCase
             'invoice_id' => $invoice->id,
             'transaction_reference' => 'REF-123',
             'payment_method' => 'paypal',
-            'amount' => 50000,
+            'amount' => 500.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);
 
-        $this->assertSame(500.00, $transaction->amount);
+        $this->assertSame(500.0, $transaction->amount);
     }
 
     #[Test]

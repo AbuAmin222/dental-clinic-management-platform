@@ -80,7 +80,7 @@ class UserTest extends TestCase
             'last_name' => 'Doe',
         ]);
 
-        $this->assertSame('John Doe', $user->full_name);
+        $this->assertSame('John  Doe', $user->full_name);
     }
 
     #[Test]

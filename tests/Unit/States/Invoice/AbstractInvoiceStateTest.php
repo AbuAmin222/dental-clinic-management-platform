@@ -69,7 +69,7 @@ class AbstractInvoiceStateTest extends TestCase
             new RefundedState(),
         ];
 
-        $mockInvoice = $this->createMock(Invoice::class);
+        $mockInvoice = $this->createMock(\App\Models\Invoice::class);
 
         foreach ($states as $state) {
             $state->onEnter($mockInvoice);

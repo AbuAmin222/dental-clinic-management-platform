@@ -7,32 +7,21 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Specialization>
+ * @extends Factory<Specialization>
  */
 class SpecializationFactory extends Factory
 {
     protected $model = Specialization::class;
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
 
     public function definition(): array
     {
-        $name = $this->faker->unique()->randomElement([
-            'General Dentistry',
-            'Orthodontics',
-            'Endodontics',
-            'Periodontics',
-            'Pediatric Dentistry',
-            'Oral Surgery'
-        ]);
+        $name = fake()->unique()->word();
 
         return [
             'name' => $name,
             'slug' => Str::slug($name),
-            'description' => $this->faker->sentence(),
+            'description' => fake()->sentence(),
+            'is_active' => true,
         ];
     }
 }

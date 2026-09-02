@@ -84,6 +84,6 @@ class FinancialProfileStrategyTest extends TestCase
 
         $this->strategy->delete($user);
 
-        $this->assertDatabaseMissing('financials', ['user_id' => $user->id]);
+        $this->assertSoftDeleted('financials', ['user_id' => $user->id]);
     }
 }

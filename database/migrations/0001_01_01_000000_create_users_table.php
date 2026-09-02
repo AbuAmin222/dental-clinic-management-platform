@@ -30,7 +30,7 @@ return new class extends Migration
             $table->timestamp('phone_verified_at')->nullable();
 
             $table->string('password');
-            $table->boolean('must_change_password')->default(false);
+            $table->boolean('must_change_password')->default(true);
 
             $table->unsignedBigInteger('base_salary')->nullable()->comment('Minor currency unit (agorot). Admin-managed only. See App\\Casts\\MoneyCast.');
 

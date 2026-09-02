@@ -25,17 +25,18 @@ class FinancialAuditLogTest extends TestCase
         $log = FinancialAuditLog::create([
             'financial_id' => $financial->id,
             'action' => 'invoice_issued',
-            'amount_changed' => 50000,
+            'amount_changed' => 500.0,
         ]);
 
-        $this->assertSame(500.00, $log->amount_changed);
+        $this->assertSame(500.0, $log->amount_changed);
     }
 
     #[Test]
     public function casts_payload_fields_as_array(): void
     {
+        $financial = Financial::factory()->create();
         $log = FinancialAuditLog::create([
-            'financial_id' => null,
+            'financial_id' => $financial->id,
             'action' => 'test',
             'payload_before' => ['status' => 'draft'],
             'payload_after' => ['status' => 'pending'],
@@ -112,8 +113,10 @@ class FinancialAuditLogTest extends TestCase
     #[Test]
     public function invoice_relationship(): void
     {
+        $financial = Financial::factory()->create();
         $invoice = Invoice::factory()->create();
         $log = FinancialAuditLog::create([
+            'financial_id' => $financial->id,
             'invoice_id' => $invoice->id,
             'action' => 'test',
         ]);

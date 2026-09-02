@@ -37,6 +37,7 @@ class AppointmentPolicy
      */
     public function viewAny(User $user): bool
     {
+        // $user->hasPermissionTo(users)
         return in_array($user->role, self::ALLOWED_VIEW_ANY_ROLES, true);
     }
 
