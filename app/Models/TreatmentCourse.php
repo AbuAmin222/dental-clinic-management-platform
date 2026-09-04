@@ -22,6 +22,8 @@ class TreatmentCourse extends Model
         'title',
         'tooth_number',
         'planned_sessions_count',
+        'completed_sessions_count',
+        'status',
     ];
 
     protected $casts = [

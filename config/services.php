@@ -58,4 +58,10 @@ return [
     'exchange' => [
         'ils_to_usd' => env('ILS_TO_USD_RATE', 0.27),
     ],
+    'sms' => [
+        'driver' => env('SMS_DRIVER', 'log'),
+        'default_country_code' => env('SMS_DEFAULT_COUNTRY_CODE', '+970'),
+        'log_channel' => env('SMS_LOG_CHANNEL', 'stack'),
+    ],
+
 ];

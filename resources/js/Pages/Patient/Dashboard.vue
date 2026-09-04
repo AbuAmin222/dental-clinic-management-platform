@@ -130,7 +130,7 @@ const getInvoiceStatusBadge = (status) => {
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Link
-              :href="route('patient.appointment.create')"
+              :href="route('patient.appointment.index')"
               class="p-6 bg-purple-50 border-l-4 border-purple-500 rounded-xl hover:bg-purple-100/70 transition block group"
             >
               <h3 class="text-purple-700 font-bold group-hover:underline">
@@ -177,11 +177,12 @@ const getInvoiceStatusBadge = (status) => {
                 <tr
                   class="bg-gray-50 text-gray-500 font-semibold text-xs uppercase border-b border-gray-100"
                 >
-                  <th class="py-4 px-6">Doctor</th>
-                  <th class="py-4 px-6">Date</th>
-                  <th class="py-4 px-6">Time Window</th>
-                  <th class="py-4 px-6">Reason</th>
-                  <th class="py-4 px-6">Status</th>
+                  <th class="py-4 px-7">Doctor</th>
+                  <th class="py-4 px-7">Date</th>
+                  <th class="py-4 px-7">Time Window</th>
+                  <th class="py-4 px-7">Reason</th>
+                  <th class="py-4 px-7">Status</th>
+                  <th class="py-4 px-7">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
@@ -190,18 +191,18 @@ const getInvoiceStatusBadge = (status) => {
                   :key="app.id"
                   class="hover:bg-gray-50/50 transition"
                 >
-                  <td class="py-4 px-6 font-medium text-gray-900">
+                  <td class="py-4 px-7 font-medium text-gray-900">
                     Dr. {{ app.doctor?.user?.first_name }}
                     {{ app.doctor?.user?.last_name }}
                   </td>
-                  <td class="py-4 px-6 text-gray-600">{{ app.appointment_date }}</td>
-                  <td class="py-4 px-6 font-mono text-xs text-gray-500">
+                  <td class="py-4 px-7 text-gray-600">{{ app.appointment_date }}</td>
+                  <td class="py-4 px-7 font-mono text-xs text-gray-500">
                     {{ app.start_time }} - {{ app.end_time }}
                   </td>
-                  <td class="py-4 px-6 text-gray-600 max-w-xs truncate">
+                  <td class="py-4 px-7 text-gray-600 max-w-xs truncate">
                     {{ app.reason_for_visit }}
                   </td>
-                  <td class="py-4 px-6">
+                  <td class="py-4 px-7">
                     <span
                       class="px-2.5 py-1 text-xs font-semibold rounded-full border"
                       :class="getStatusBadge(app.status)"
@@ -209,6 +210,7 @@ const getInvoiceStatusBadge = (status) => {
                       {{ app.status }}
                     </span>
                   </td>
+                  <td class="py-4 px-7">Delete</td>
                 </tr>
               </tbody>
             </table>

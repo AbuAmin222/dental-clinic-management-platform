@@ -5,108 +5,86 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\Permission;
-use App\Models\Role;
 use Illuminate\Database\Seeder;
 
-/**
- * Seeds the first real entry in the permission catalog. Until this seeder, `permissions`
- * was empty unless an Admin manually created one through the Admin/Permissions UI — which
- * meant useAbilities.js's can('invoices.approve') check on the frontend (and the
- * equivalent gate anywhere it's added server-side) always evaluated false for everyone,
- * including financial staff who legitimately need it. Must run after RoleSeeder (needs
- * the 'financial' role to already exist to attach to).
- */
 class PermissionSeeder extends Seeder
 {
-    /**
-     * @return array<int, array{name: string, display_name: string, group: string, roles: string[]}>
-     */
-    private function catalog(): array
-    {
-        return [
-            [
-                'name' => 'invoices.approve',
-                'display_name' => 'Issue and approve invoices',
-                'group' => 'invoices',
-                'roles' => ['financial'],
-            ],
-
-            // SalaryPaymentPolicy (app/Policies/Payment/SalaryPaymentPolicy.php) gates
-            // every action in Financial\SalaryPaymentController on one of these six
-            // permissions ANDed with the 'financial' role. Before this addition, none of
-            // them existed in the catalog, so hasPermissionTo() was false for everyone —
-            // the entire payroll workflow (record → approve/hold/reject/cancel →
-            // markPaid) was unusable by any financial staff member on a fresh seed,
-            // despite the controller, service, and policy all being fully implemented
-            // and individually correct. Granted to 'financial' by default here to match
-            // the policy's own stated intent — the role stays the non-negotiable
-            // baseline, an Admin can later narrow who specifically holds each of these
-            // via the RBAC permissions UI without touching this seeder again.
-            [
-                'name' => 'salary_payments.record',
-                'display_name' => 'Record a new salary payment',
-                'group' => 'salary_payments',
-                'roles' => ['financial'],
-            ],
-            [
-                'name' => 'salary_payments.approve',
-                'display_name' => 'Approve a salary payment',
-                'group' => 'salary_payments',
-                'roles' => ['financial'],
-            ],
-            [
-                'name' => 'salary_payments.hold',
-                'display_name' => 'Place a salary payment on hold',
-                'group' => 'salary_payments',
-                'roles' => ['financial'],
-            ],
-            [
-                'name' => 'salary_payments.reject',
-                'display_name' => 'Reject a salary payment',
-                'group' => 'salary_payments',
-                'roles' => ['financial'],
-            ],
-            [
-                'name' => 'salary_payments.cancel',
-                'display_name' => 'Cancel a salary payment',
-                'group' => 'salary_payments',
-                'roles' => ['financial'],
-            ],
-            [
-                'name' => 'salary_payments.mark_paid',
-                'display_name' => 'Mark a salary payment as paid',
-                'group' => 'salary_payments',
-                'roles' => ['financial'],
-            ],
-
-            // PaymentMethod management has no dedicated Policy today (authorization is
-            // the coarse `role:financial` route middleware only, plus per-record
-            // ownership checks inside LocalPaymentMethodController itself). This
-            // permission exists so an Admin can optionally restrict which financial
-            // staff manage the clinic's bank/e-wallet configuration — granted to
-            // 'financial' by default so nothing changes unless an Admin acts on it.
-            [
-                'name' => 'payment_methods.manage',
-                'display_name' => 'Manage local payment method configuration',
-                'group' => 'payment_methods',
-                'roles' => ['financial'],
-            ],
-        ];
-    }
-
     public function run(): void
     {
-        foreach ($this->catalog() as $entry) {
-            $permission = Permission::updateOrCreate(
-                ['name' => $entry['name']],
-                [
-                    'display_name' => $entry['display_name'],
-                    'group' => $entry['group'],
-                ]
-            );
+        $permissions = [
+            // --- appointments (AppointmentPolicy) ---
+            ['appointments.viewAny', 'SHOW ALL APPOINTEMTS', 'appointments'],
+            ['appointments.view', 'SHOW APPOINTMENT DETAILED', 'appointments'],
+            ['appointments.create', 'CREATE NEW APPOINTMENT', 'appointments'],
+            ['appointments.update', 'EDIT APPOINTMENT', 'appointments'],
+            ['appointments.delete', 'CANCCELED|DELETED APPOINTMENT', 'appointments'],
 
-            $roleIds = Role::whereIn('name', $entry['roles'])->pluck('id');
-            $permission->roles()->syncWithoutDetaching($roleIds);
+            // --- dental_records (DentalRecordPolicy) ---
+            ['dental_records.viewAny', 'SHOW ALL DENTAL RECORDS', 'dental_records'],
+            ['dental_records.view', 'SHOW MEDICAL HISTORY', 'dental_records'],
+            ['dental_records.create', 'CREATE MIDECAL HISTORY', 'dental_records'],
+            ['dental_records.update', 'EDIT MEDICAL HISTORY', 'dental_records'],
+            ['dental_records.delete', 'DELETE MEDICAL HISTORY', 'dental_records'],
+            ['dental_records.restore', 'RECOVERY DELETED MEDICAL HISTORY', 'dental_records'],
+            ['dental_records.forceDelete', 'PERMANENTLY DELETE MEDICAL RECORD', 'dental_records'],
+
+            // --- invoices (InvoicePolicy) ---
+            ['invoices.viewAny', 'SHOW ALL INVOICES', 'invoices'],
+            ['invoices.view', 'SHOW INVOICE', 'invoices'],
+            ['invoices.create', 'REQUEST A NEW INVOICE (RECEIPT)', 'invoices'],
+            ['invoices.update', 'EDIT INVOICE', 'invoices'],
+            ['invoices.delete', 'DELETE INVOICE', 'invoices'],
+            ['invoices.restore', 'RECVERY DELETED INVOICE', 'invoices'],
+            ['invoices.forceDelete', 'PERMANENTLY DELETED INVOICE', 'invoices'],
+            ['invoices.pay', 'PAY INVOICE', 'invoices'],
+            ['invoices.issue', 'INVOICE APPROVAL|ISSUANCE (FINANCE)', 'invoices'],
+
+            // --- pricings (PricingPolicy) ---
+            ['pricings.viewAny', 'VIEW PRICINGS LIST', 'pricings'],
+            ['pricings.view', 'VIEW SERVICE PRICING', 'pricings'],
+            ['pricings.create', 'ADD SERVICE PRICING', 'pricings'],
+            ['pricings.update', 'UPDATE SERVICE PRICING', 'pricings'],
+            ['pricings.delete', 'DELETE SERVICE PRICING', 'pricings'],
+            ['pricings.restore', 'RESTORE DELETED SERVICE PRICING', 'pricings'],
+            ['pricings.forceDelete', 'PERMANENTLY DELETE SERVICE PRICING', 'pricings'],
+
+            // --- patients (PatientPolicy) ---
+            ['patients.viewAny', 'VIEW ALL PATIENTS', 'patients'],
+            ['patients.view', 'VIEW PATIENT PROFILE', 'patients'],
+            ['patients.create', 'REGISTER NEW PATIENT', 'patients'],
+            ['patients.update', 'UPDATE PATIENT DETAILS', 'patients'],
+            ['patients.delete', 'DELETE PATIENT', 'patients'],
+
+            // --- users (UserPolicy) — ACCOUNT MANAGEMENT ---
+            ['users.viewAny', 'VIEW ALL USERS', 'users'],
+            ['users.view', 'VIEW USER PROFILE', 'users'],
+            ['users.create', 'CREATE USER ACCOUNT', 'users'],
+            ['users.update', 'UPDATE USER ACCOUNT', 'users'],
+            ['users.delete', 'DELETE OR DISABLE USER ACCOUNT', 'users'],
+            ['users.activate', 'ACTIVATE PENDING USER ACCOUNT', 'users'],
+            ['users.manage_salary', 'SET EMPLOYEE BASE SALARY', 'users'],
+
+            // --- salary_payments (SalaryPaymentService, FINANCIAL) ---
+            ['salary_payments.record', 'RECORD SALARY PAYMENT', 'salary_payments'],
+            ['salary_payments.approve', 'APPROVE SALARY PAYMENT', 'salary_payments'],
+            ['salary_payments.hold', 'HOLD SALARY PAYMENT', 'salary_payments'],
+            ['salary_payments.reject', 'REJECT SALARY PAYMENT', 'salary_payments'],
+            ['salary_payments.cancel', 'CANCEL SALARY PAYMENT', 'salary_payments'],
+            ['salary_payments.markPaid', 'CONFIRM ACTUAL SALARY DISBURSEMENT', 'salary_payments'],
+
+            // --- local_payment_methods (FINANCIAL) ---
+            ['local_payment_methods.manage', 'MANAGE LOCAL PAYMENT METHODS DISPLAYED TO PATIENTS', 'local_payment_methods'],
+
+            // --- roles/permissions (ADMIN ONLY — SYSTEM MANAGEMENT) ---
+            ['system.manage_roles', 'ASSIGN OR REVOKE USER ROLES', 'system'],
+            ['system.manage_permissions', 'GRANT OR REVOKE PERMISSIONS (ROLE OR USER)', 'system'],
+        ];
+
+        foreach ($permissions as [$name, $displayName, $group]) {
+            Permission::updateOrCreate(
+                ['name' => $name],
+                ['display_name' => $displayName, 'group' => $group],
+            );
         }
     }
 }

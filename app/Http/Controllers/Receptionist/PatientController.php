@@ -63,7 +63,9 @@ class PatientController extends Controller
     ): RedirectResponse {
         $this->authorize('create', Patient::class);
 
-        $registerPatientAction->execute($request->validated());
+        $staff = $request->user()->primaryRole()->name;
+        $data = array_merge($request->validated(), ['staff' => $staff]);
+        $registerPatientAction->execute($data);
 
         return redirect()
             ->route('receptionist.patients.index')

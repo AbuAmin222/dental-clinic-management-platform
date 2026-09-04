@@ -10,6 +10,7 @@ use App\Services\Security\AccountVerificationService;
 use App\Services\UserService;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Jetstream\Jetstream;
+use App\Enums\UserRole;
 
 class RegisterPatientAction
 {
@@ -37,8 +38,9 @@ class RegisterPatientAction
      */
     public function execute(array $data): User
     {
+        $role = UserRole::Patient->value;
         Validator::make($data, [
-            'role' => ['nullable', 'string', 'in:patient'],
+            'role' => ['nullable', 'string', 'in:' . $role],
         ], [
             'role.in' => 'The role of the selected user is not supported in the system (should be patient).',
         ])->validate();
@@ -50,7 +52,6 @@ class RegisterPatientAction
         $messages = $roleStrategy->messages();
 
         unset($rules['password']);
-
         $rules = array_merge($rules, [
             'password' => ['required', 'string'],
             'terms'    => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : [],
@@ -62,13 +63,15 @@ class RegisterPatientAction
 
         $fullData = array_merge($data, [
             'password' => $password,
+            'terms'    => 1,
         ]);
 
-        $validatedData = Validator::make($fullData, $rules, $messages)->validate();
+        $validatedData = Validator::make($fullData, $rules, $messages)->validated();
+        $data = array_merge($validatedData, ['staff' => $fullData['staff']]);
 
-        $user = $this->userService->registerUser($validatedData);
+        $user = $this->userService->registerUser($data);
 
-        $user->forceFill(['must_change_password' => true])->save();
+        // $user->forceFill(['must_change_password' => true])->save();
         $this->accountVerificationService->generateAndSendVerificationCode($user);
 
         return $user;

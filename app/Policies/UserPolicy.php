@@ -3,10 +3,12 @@
 namespace App\Policies;
 
 use App\Enums\AdminAccessLevel;
+use App\Enums\Permissions\UserPermission;
 use App\Enums\UserRole;
 use App\Models\Admin;
 use App\Models\User;
 use App\Policies\Concerns\HasClinicalProfiles;
+use App\Services\Authorization\PermissionGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 /**
@@ -27,13 +29,19 @@ class UserPolicy
 {
     use HandlesAuthorization, HasClinicalProfiles;
 
+    private const ALLOWED_CRUD_ROLES = [UserRole::Admin->value];
+    private const ALLOWED_SENSITIVE_ACTION_ROLES = [UserRole::Admin->value];
+
+    public function __construct(
+        private readonly PermissionGate $gate,
+    ) {}
+
     /**
      * Determine whether the user can browse the full account directory.
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(UserRole::Admin->value)
-            && $user->hasPermissionTo('users.viewAny');
+        return $this->gate->allows($user, UserRole::staffRoleValues(), UserPermission::ViewAny);
     }
 
     /**
@@ -41,8 +49,7 @@ class UserPolicy
      */
     public function view(User $user, User $target): bool
     {
-        return ($user->hasRole(UserRole::Admin->value) && $user->hasPermissionTo('users.view'))
-            || $user->id === $target->id;
+        return $this->gate->allows($user, UserRole::staffRoleValues(), UserPermission::View) || $user->id === $target->id;
     }
 
     /**
@@ -50,8 +57,7 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole(UserRole::Admin->value)
-            && $user->hasPermissionTo('users.create');
+        return $this->gate->allows($user, self::ALLOWED_CRUD_ROLES, UserPermission::Create);
     }
 
     /**
@@ -60,18 +66,15 @@ class UserPolicy
      */
     public function update(User $user, User $target): bool
     {
-        return ($user->hasRole(UserRole::Admin->value) && $user->hasPermissionTo('users.update'))
-            || $user->id === $target->id;
+        return $this->gate->allows($user, self::ALLOWED_CRUD_ROLES, UserPermission::Update) || $user->id === $target->id;
     }
 
     /**
      * Determine whether the user can delete the target account.
      *
-     * حماية المسؤول الجذري (2026-08-22): لا يجوز حذف حساب SuperAdmin إلا من قِبل
-     * SuperAdmin آخر، ولا يجوز أبداً حذف آخر SuperAdmin متبقٍّ في النظام — بدون هذا
-     * القيد، حذف الحساب الوحيد صاحب `AdminAccessLevel::SuperAdmin` كان سيقفل كل مسارات
-     * إدارة الأدوار/الصلاحيات في النظام بلا رجعة (لا أحد يملك صلاحية استعادتها بعدها).
-     *
+     * حماية المسؤول الجذري: لا يجوز حذف حساب SuperAdmin إلا من قِبل
+     * SuperAdmin آخر، ولا يجوز أبداً حذف آخر SuperAdmin متبقٍّ في النظام .
+     * 
      * The `users.delete` permission is only required on the admin-acting-on-another
      * branch; self-deletion of one's own account must never depend on the admin
      * permission catalog, or a non-admin user could be locked out of closing their
@@ -79,7 +82,7 @@ class UserPolicy
      */
     public function delete(User $user, User $target): bool
     {
-        $isAdminActing = $user->hasRole(UserRole::Admin->value) && $user->hasPermissionTo('users.delete');
+        $isAdminActing = $this->gate->allows($user, self::ALLOWED_CRUD_ROLES, UserPermission::Delete);
         $isSelf = $user->id === $target->id;
 
         if (! ($isAdminActing || $isSelf)) {
@@ -109,8 +112,7 @@ class UserPolicy
      */
     public function activate(User $user): bool
     {
-        return $user->hasRole(UserRole::Admin->value)
-            && $user->hasPermissionTo('users.activate');
+        return $this->gate->allows($user, self::ALLOWED_CRUD_ROLES, UserPermission::Activate);
     }
 
     /**
@@ -121,7 +123,6 @@ class UserPolicy
      */
     public function manageSalary(User $user): bool
     {
-        return $user->hasRole(UserRole::Admin->value)
-            && $user->hasPermissionTo('users.manage_salary');
+        return $this->gate->allows($user, self::ALLOWED_CRUD_ROLES, UserPermission::ManageSalary);
     }
 }

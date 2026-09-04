@@ -21,7 +21,20 @@ class AmountThresholdRuleTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->invoice = Invoice::factory()->create();
+        $doctor = \App\Models\Doctor::factory()->create();
+        $patient = \App\Models\Patient::factory()->create();
+        $this->invoice = Invoice::create([
+            'doctor_id' => $doctor->id,
+            'patient_id' => $patient->id,
+            'sub_total' => 100.0,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'total_amount' => 100.0,
+            'paid_amount' => 0.0,
+            'due_amount' => 100.0,
+            'status' => \App\Enums\InvoiceStatus::Pending,
+            'due_date' => '2025-12-31',
+        ]);
     }
 
     #[Test]
@@ -33,7 +46,7 @@ class AmountThresholdRuleTest extends TestCase
             'invoice_id' => $this->invoice->id,
             'transaction_reference' => 'REF-123',
             'payment_method' => 'paypal',
-            'amount' => 600000,
+            'amount' => 6000.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);
@@ -50,7 +63,7 @@ class AmountThresholdRuleTest extends TestCase
             'invoice_id' => $this->invoice->id,
             'transaction_reference' => 'REF-123',
             'payment_method' => 'paypal',
-            'amount' => 400000,
+            'amount' => 400.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);
@@ -67,7 +80,7 @@ class AmountThresholdRuleTest extends TestCase
             'invoice_id' => $this->invoice->id,
             'transaction_reference' => 'REF-123',
             'payment_method' => 'paypal',
-            'amount' => 500000,
+            'amount' => 5000.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);
@@ -84,7 +97,7 @@ class AmountThresholdRuleTest extends TestCase
             'invoice_id' => $this->invoice->id,
             'transaction_reference' => 'REF-123',
             'payment_method' => 'paypal',
-            'amount' => 400000,
+            'amount' => 400.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);
@@ -101,7 +114,7 @@ class AmountThresholdRuleTest extends TestCase
             'invoice_id' => $this->invoice->id,
             'transaction_reference' => 'REF-123',
             'payment_method' => 'paypal',
-            'amount' => 150000,
+            'amount' => 1500.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);
@@ -118,10 +131,12 @@ class AmountThresholdRuleTest extends TestCase
             'invoice_id' => $this->invoice->id,
             'transaction_reference' => 'REF-123',
             'payment_method' => 'paypal',
-            'amount' => null,
+            'amount' => 0.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);
+
+        $this->assertSame(0, $rule->evaluate($transaction));
 
         $this->assertSame(0, $rule->evaluate($transaction));
     }

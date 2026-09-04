@@ -41,7 +41,7 @@ class AppointmentServiceTest extends TestCase
         ], $patient->id);
 
         $this->assertInstanceOf(Appointment::class, $appointment);
-        $this->assertSame(AppointmentStatus::Scheduled, $appointment->status);
+        $this->assertSame(AppointmentStatus::Confirmed, $appointment->status);
         $this->assertSame($doctor->id, $appointment->doctor_id);
         $this->assertSame($patient->id, $appointment->patient_id);
     }
@@ -166,6 +166,7 @@ class AppointmentServiceTest extends TestCase
         $this->expectExceptionMessage('already booked');
 
         $this->service->updateAppointment($existing, [
+            'doctor_id' => $doctor->id,
             'appointment_date' => '2025-02-01',
             'start_time' => '10:15:00',
             'end_time' => '10:45:00',

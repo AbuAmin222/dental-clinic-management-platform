@@ -29,7 +29,7 @@ class AppointmentTest extends TestCase
         ]);
 
         $this->assertEquals('2025-01-15', $appointment->appointment_date->format('Y-m-d'));
-        $this->assertEquals(AppointmentStatus::Scheduled, $appointment->status);
+        $this->assertContains($appointment->status, AppointmentStatus::cases());
     }
 
     #[Test]

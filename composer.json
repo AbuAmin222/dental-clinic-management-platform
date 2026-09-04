@@ -36,7 +36,8 @@
         },
         "files": [
             "app/Helpers/storage.php",
-            "app/Helpers/tracer.php"
+            "app/Helpers/tracer.php",
+            "app/Helpers/sms.php"
         ]
     },
     "autoload-dev": {

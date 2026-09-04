@@ -118,19 +118,21 @@ class User extends Authenticatable implements MustVerifyEmail
         'last_name',
         'username',
         'email',
-        'identity_number',
-        'phone',
         'password',
-        'address',
-        'identity_photo_path',
-        'gender',
+        'must_change_password',
+        'identity_number',
         'date_of_birth',
-        'is_active',
-        'profile_photo_path',
+        'phone',
         'phone_verification_code',
         'phone_verification_code_expires_at',
         'phone_verified_at',
-        'must_change_password',
+        'address',
+        'identity_photo_path',
+        'profile_photo_path',
+        'gender',
+        'is_active',
+        'is_profile_completed',
+        'registration_source',
     ];
 
     /**
@@ -186,6 +188,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'must_change_password' => 'boolean',
             'phone_verification_code_expires_at' => 'datetime',
             'phone_verified_at' => 'datetime',
+            'is_profile_completed' => 'boolean',
         ];
     }
 
@@ -733,5 +736,25 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new QueuedResetPassword($token));
+    }
+
+    /**
+     * <div dir="rtl">
+     * تحديد رقم الهاتف المستخدَم لتوجيه الإشعارات عبر قناة `sms` المخصصة
+     * ({@see \App\Notifications\Channels\SmsChannel}) — تطبيق لاتفاقية Laravel القياسية
+     * `routeNotificationFor{Channel}`، تماماً مثل `routeNotificationForMail()` المدمجة.
+     * </div>
+     *
+     * Resolve the phone number used to route notifications through the custom `sms`
+     * channel ({@see \App\Notifications\Channels\SmsChannel}) — implements Laravel's
+     * standard `routeNotificationFor{Channel}` convention, exactly like the built-in
+     * `routeNotificationForMail()`.
+     *
+     * @param  \Illuminate\Notifications\Notification $notification
+     * @return string|null
+     */
+    public function routeNotificationForSms(\Illuminate\Notifications\Notification $notification): ?string
+    {
+        return $this->phone;
     }
 }

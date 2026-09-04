@@ -42,7 +42,7 @@ class CoreUserRules
             'gender'          => ['required', Rule::in(Gender::values())],
             'date_of_birth'   => ['required', 'date'],
             'address'         => ['nullable', 'string', 'max:255'],
-            'identity_photo'  => self::identityImageRule(required: true),
+            'identity_photo'  => self::identityImageRule(required: false),
             'profile_photo'   => self::identityImageRule(required: false),
         ];
     }

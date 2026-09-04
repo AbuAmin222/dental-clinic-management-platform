@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Policies\Payment;
 
+use App\Enums\Permissions\InvoicePermission;
 use App\Enums\UserRole;
 use App\Factories\Authorization\InvoiceAuthorizationFactory;
 use App\Models\Appointment;
 use App\Models\Invoice;
 use App\Models\User;
 use App\Policies\Concerns\HasClinicalProfiles;
+use App\Services\Authorization\PermissionGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use InvalidArgumentException;
 
@@ -21,10 +23,19 @@ class InvoicePolicy
 {
     use HandlesAuthorization, HasClinicalProfiles;
 
+    public function __construct(
+        private readonly PermissionGate $gate,
+    ) {}
+
+
+
     /**
      * Roles permitted to pull general accounting index ledgers.
      */
-    private const ALLOWED_VIEW_ANY_ROLES = [UserRole::Doctor->value, UserRole::Patient->value, UserRole::Receptionist->value];
+    private const ALLOWED_CRUD_ROLES = [UserRole::Receptionist->value];
+    private const ALLOWED_FORCE_DELETE_ROLES = [UserRole::Admin->value];
+    private const ALLOWED_PAY_ROLES = [UserRole::Patient->value];
+    private const ALLOWED_FINANTIAL_ROLES = [UserRole::Financial->value];
 
     /**
      * Determine whether the user can view billing arrays.
@@ -34,7 +45,7 @@ class InvoicePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(self::ALLOWED_VIEW_ANY_ROLES);
+        return $this->gate->allows($user, UserRole::values(), InvoicePermission::ViewAny);
     }
 
     /**
@@ -47,7 +58,8 @@ class InvoicePolicy
      */
     public function view(User $user, Invoice $invoice, Appointment $appointment): bool
     {
-        return $this->delegateToStrategy($user, $invoice, $appointment);
+        return $this->gate->allows($user, UserRole::values(), InvoicePermission::View)
+            && $this->delegateToStrategy($user, $invoice, $appointment);
     }
 
     /**
@@ -58,7 +70,7 @@ class InvoicePolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole(UserRole::Receptionist->value);
+        return $this->gate->allows($user, self::ALLOWED_CRUD_ROLES, InvoicePermission::Create);
     }
 
     /**
@@ -71,7 +83,8 @@ class InvoicePolicy
      */
     public function update(User $user, Invoice $invoice, Appointment $appointment): bool
     {
-        return $user->hasRole(UserRole::Receptionist->value) && $this->delegateToStrategy($user, $invoice, $appointment);
+        return $this->gate->allows($user, self::ALLOWED_CRUD_ROLES, InvoicePermission::Update)
+            && $this->delegateToStrategy($user, $invoice, $appointment);
     }
 
     /**
@@ -84,7 +97,8 @@ class InvoicePolicy
      */
     public function delete(User $user, Invoice $invoice, Appointment $appointment): bool
     {
-        return $user->hasRole(UserRole::Receptionist->value) && $this->delegateToStrategy($user, $invoice, $appointment);
+        return $this->gate->allows($user, self::ALLOWED_CRUD_ROLES, InvoicePermission::Delete)
+            && $this->delegateToStrategy($user, $invoice, $appointment);
     }
 
     /**
@@ -97,7 +111,8 @@ class InvoicePolicy
      */
     public function restore(User $user, Invoice $invoice, Appointment $appointment): bool
     {
-        return $user->hasRole(UserRole::Receptionist->value) && $this->delegateToStrategy($user, $invoice, $appointment);
+        return $this->gate->allows($user, UserRole::staffRoleValues(), InvoicePermission::Restore)
+            && $this->delegateToStrategy($user, $invoice, $appointment);
     }
 
     /**
@@ -109,7 +124,7 @@ class InvoicePolicy
      */
     public function forceDelete(User $user, Invoice $invoice): bool
     {
-        return false;
+        return $this->gate->allows($user, self::ALLOWED_FORCE_DELETE_ROLES, InvoicePermission::ForceDelete);
     }
 
     /**
@@ -122,7 +137,8 @@ class InvoicePolicy
      */
     public function pay(User $user, Invoice $invoice, Appointment $appointment): bool
     {
-        return $user->hasRole(UserRole::Patient->value) && $this->delegateToStrategy($user, $invoice, $appointment);
+        return $this->gate->allows($user, self::ALLOWED_PAY_ROLES, InvoicePermission::Pay)
+            && $this->delegateToStrategy($user, $invoice, $appointment);
     }
 
     /**
@@ -141,7 +157,7 @@ class InvoicePolicy
      */
     public function issue(User $user, Invoice $invoice): bool
     {
-        return $user->hasRole(UserRole::Financial->value);
+        return $this->gate->allows($user, self::ALLOWED_FINANTIAL_ROLES, InvoicePermission::Issue);
     }
 
     /**

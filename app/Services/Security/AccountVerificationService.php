@@ -85,12 +85,10 @@ class AccountVerificationService
      */
     public function requiresSecurityCompletion(User $user): bool
     {
-        $patientRole = UserRole::Patient->values();
+        if ($user->hasRole(UserRole::Patient->value)) {
+            return $user->must_change_password || $user->phone_verified_at === null;
+        }
 
-        // if ($user->hasRole($patientRole)) {
-        //     return $user->must_change_password;
-        // } else {
-        return $user->must_change_password || $user->phone_verified_at === null;
-        // }
+        return $user->must_change_password;
     }
 }

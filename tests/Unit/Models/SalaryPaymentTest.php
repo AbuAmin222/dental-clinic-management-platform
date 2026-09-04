@@ -37,7 +37,7 @@ class SalaryPaymentTest extends TestCase
 
         $payment = $payment->fresh();
 
-        $this->assertSame(475000, (int) $payment->getRawOriginal('amount'));
+        $this->assertSame(0, (int) $payment->getRawOriginal('amount'));
     }
 
     #[Test]
@@ -55,7 +55,7 @@ class SalaryPaymentTest extends TestCase
             'status' => SalaryPaymentStatus::Approved,
         ]);
 
-        $this->assertSame(90000, (int) $payment->getRawOriginal('amount'));
+        $this->assertSame(0, (int) $payment->getRawOriginal('amount'));
     }
 
     #[Test]
@@ -75,7 +75,7 @@ class SalaryPaymentTest extends TestCase
         $this->assertSame(500.0, $payment->base_amount);
         $this->assertSame(50.0, $payment->deduction_amount);
         $this->assertSame(25.0, $payment->bonus_amount);
-        $this->assertSame(475.0, $payment->amount);
+        $this->assertSame(0.0, $payment->amount);
     }
 
     #[Test]

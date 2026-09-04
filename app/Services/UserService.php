@@ -67,7 +67,7 @@ class UserService
                 $identityPath = storage_engine()->upload($fullName, $identityPhotoFile, "secure/{$roleDir}/identities", 'local');
             }
 
-            $user = $this->coreProfileStrategy->create($data, $profilePath, $identityPath);
+            $user = $this->coreProfileStrategy->create($data, $profilePath, $identityPath, $data['staff']);
 
             RoleProfileFactory::make($roleDir)->create($user, $data);
 

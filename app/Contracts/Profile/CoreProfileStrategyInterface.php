@@ -16,7 +16,7 @@ interface CoreProfileStrategyInterface
      * @param string|null $identityPath
      * @return User
      */
-    public function create(array $data, ?string $profilePath = null, ?string $identityPath = null): User;
+    public function create(array $data, ?string $profilePath = null, ?string $identityPath = null, ?string $staff = null): User;
 
     /**
      * Update base User profile record.

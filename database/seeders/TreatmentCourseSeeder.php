@@ -11,7 +11,7 @@ use Illuminate\Database\Seeder;
 
 class TreatmentCourseSeeder extends Seeder
 {
-    private const TARGET_COUNT = 20;
+    private const TARGET_COUNT = 5;
 
     public function run(): void
     {
@@ -34,8 +34,8 @@ class TreatmentCourseSeeder extends Seeder
 
         for ($i = $existing; $i < self::TARGET_COUNT; $i++) {
             TreatmentCourse::factory()->create([
-                'patient_id' => $patients->random(1)->id,
-                'doctor_id' => $doctors->random(1)->id,
+                'patient_id' => $patients->random()->id,
+                'doctor_id' => $doctors->random()->id,
             ]);
         }
 

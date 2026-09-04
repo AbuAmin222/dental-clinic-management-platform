@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace App\Policies\Patient;
 
+use App\Enums\Permissions\PatientPermission;
 use App\Enums\UserRole;
 use App\Factories\Authorization\PatientAuthorizationFactory;
 use App\Models\Patient;
 use App\Models\User;
 use App\Policies\Concerns\HasClinicalProfiles;
+use App\Services\Authorization\PermissionGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use InvalidArgumentException;
 
 class PatientPolicy
 {
     use HandlesAuthorization, HasClinicalProfiles;
+
+    public function __construct(
+        private readonly PermissionGate $gate,
+    ) {}
 
     /**
      * Roles authorized to view generic index/listing views of patients.
@@ -24,7 +30,7 @@ class PatientPolicy
     /**
      * Roles authorized to register a new patient profile.
      */
-    private const ALLOWED_CREATE_ROLES = [UserRole::Receptionist->value];
+    private const ALLOWED_CREATE_ROLES = [UserRole::Receptionist->value, UserRole::Admin->value];
 
     /**
      * Determine whether the user can view any patient listing.
@@ -34,8 +40,7 @@ class PatientPolicy
      */
     public function viewAny(User $user): bool
     {
-        trace_reach('PatientPolicy@viewAny', $user->only(['username', 'username']));
-        return $user->hasRole(self::ALLOWED_VIEW_ANY_ROLES) && $user->hasPermissionTo('patients.viewAny');
+        return $this->gate->allows($user, UserRole::values(), PatientPermission::ViewAny);
     }
 
     /**
@@ -48,7 +53,8 @@ class PatientPolicy
      */
     public function view(User $user, Patient $patient): bool
     {
-        return $this->delegateToStrategy($user, $patient);
+        return $this->gate->allows($user, UserRole::values(), PatientPermission::View)
+            && $this->delegateToStrategy($user, $patient);
     }
 
     /**
@@ -59,7 +65,7 @@ class PatientPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole(self::ALLOWED_CREATE_ROLES) && $user->hasPermissionTo('patients.create');
+        return $this->gate->allows($user, self::ALLOWED_CREATE_ROLES, PatientPermission::Create);
     }
 
     /**
@@ -71,7 +77,8 @@ class PatientPolicy
      */
     public function update(User $user, Patient $patient): bool
     {
-        return $this->delegateToStrategy($user, $patient);
+        return $this->gate->allows($user, UserRole::values(), PatientPermission::Update)
+            && $this->delegateToStrategy($user, $patient);
     }
 
     /**
@@ -83,12 +90,13 @@ class PatientPolicy
      */
     public function delete(User $user, Patient $patient): bool
     {
-        return $user->hasRole(UserRole::Receptionist->value) && $user->hasPermissionTo('patients.delete');
+        return $this->gate->allows($user, UserRole::values(), PatientPermission::Delete);
     }
 
     /**
      * Helper logic to securely process dynamic runtime delegation using the operational
-     * authorization factory. Integrates defensive programming to fail-closed gracefully if
+     * authorization factory. 
+     * Integrates defensive programming to fail-closed gracefully if
      * configuration mismatches occur.
      *
      * @param  \App\Models\User     $user

@@ -31,18 +31,20 @@ class PatientVerificationCodeNotification extends Notification implements Should
     /** @return array<int, string> */
     public function via(mixed $notifiable): array
     {
-        return ['mail'];
+        return ['sms'];
     }
 
-    public function toMail(mixed $notifiable): MailMessage
+    public function toSms(mixed $notifiable): string
     {
-        return (new MailMessage)
-            ->subject('🔐 Your Account Verification Code')
-            ->greeting("Hello, {$notifiable->first_name}!")
-            ->line('Before you can access any clinic services, please confirm your identity using the verification code below.')
-            ->line("Verification Code: {$this->code}")
-            ->line("This code will expire in {$this->expiryMinutes} minutes.")
-            ->line('If you did not request this code, please contact the clinic front desk immediately.')
-            ->salutation("Yours Sincerely,\nDental Clinic Application (DCA)");
+        return "Dental Clinic Application: Your verification code is {$this->code}. It expires in {$this->expiryMinutes} minutes. Do not share this code with anyone.";
+
+        // return (new MailMessage)
+        //     ->subject('🔐 Your Account Verification Code')
+        //     ->greeting("Hello, {$notifiable->first_name}!")
+        //     ->line('Before you can access any clinic services, please confirm your identity using the verification code below.')
+        //     ->line("Verification Code: {$this->code}")
+        //     ->line("This code will expire in {$this->expiryMinutes} minutes.")
+        //     ->line('If you did not request this code, please contact the clinic front desk immediately.')
+        //     ->salutation("Yours Sincerely,\nDental Clinic Application (DCA)");
     }
 }

@@ -42,7 +42,7 @@ class CompositeRiskInterceptorTest extends TestCase
             'invoice_id' => $invoice->id,
             'transaction_reference' => 'REF-123',
             'payment_method' => 'paypal',
-            'amount' => 1000,
+            'amount' => 100.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);
@@ -57,17 +57,17 @@ class CompositeRiskInterceptorTest extends TestCase
     #[Test]
     public function assess_triggers_hold_when_amount_exceeds_threshold(): void
     {
-        $interceptor = new CompositeRiskInterceptor([
-            $this->amountRule,
-            $this->velocityRule,
-        ]);
+        $interceptor = new CompositeRiskInterceptor(
+            [new AmountThresholdRule(1, 80)],
+            holdThreshold: 70
+        );
 
         $invoice = Invoice::factory()->create();
         $transaction = PaymentTransaction::create([
             'invoice_id' => $invoice->id,
             'transaction_reference' => 'REF-123',
             'payment_method' => 'paypal',
-            'amount' => 5000000,
+            'amount' => 6000.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);
@@ -95,7 +95,7 @@ class CompositeRiskInterceptorTest extends TestCase
             'invoice_id' => $invoice->id,
             'transaction_reference' => 'REF-123',
             'payment_method' => 'paypal',
-            'amount' => 10000,
+            'amount' => 10.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);
@@ -115,7 +115,7 @@ class CompositeRiskInterceptorTest extends TestCase
             'invoice_id' => $invoice->id,
             'transaction_reference' => 'REF-123',
             'payment_method' => 'paypal',
-            'amount' => 1000000,
+            'amount' => 10000.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);
@@ -139,7 +139,7 @@ class CompositeRiskInterceptorTest extends TestCase
             'invoice_id' => $invoice->id,
             'transaction_reference' => 'REF-123',
             'payment_method' => 'paypal',
-            'amount' => 10000,
+            'amount' => 100.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);

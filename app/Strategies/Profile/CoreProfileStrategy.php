@@ -14,23 +14,29 @@ class CoreProfileStrategy implements CoreProfileStrategyInterface
      * @param  array<string, mixed>  $data
      * @return User
      */
-    public function create(array $data, ?string $profilePath = null, ?string $identityPath = null, ?bool $mustChangePass = true): User
+    public function create(array $data, ?string $profilePath = null, ?string $identityPath = null, ?string $staff = null): User
     {
         $user = User::create([
             'first_name' => $data['first_name'],
             'middle_name' => $data['middle_name'],
             'last_name' => $data['last_name'],
             'username' => $data['username'],
-            'email' => $data['email'],
             'identity_number' => $data['identity_number'],
             'phone' => $data['phone'],
+
+            'email' => $data['email'],
             'password' => Hash::make($data['password']),
+            'must_change_password' => $staff !== null ? true : false,
+
             'gender' => $data['gender'],
             'date_of_birth' => $data['date_of_birth'],
             'address' => $data['address'],
+
             'identity_photo_path' => $identityPath,
             'profile_photo_path' => $profilePath,
-            'must_change_password' => $mustChangePass,
+
+            'registration_source' => $staff ?? 'self',
+            'is_profile_completed' => $staff !== null ? false : true,
         ]);
 
         $user->assignRole($data['role'], isPrimary: true);

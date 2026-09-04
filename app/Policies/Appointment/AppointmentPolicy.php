@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Policies\Appointment;
 
+use App\Enums\Permissions\AppointmentPermission;
+use App\Enums\UserRole;
 use App\Factories\Authorization\AppointmentAuthorizationFactory;
 use App\Models\Appointment;
 use App\Models\User;
 use App\Policies\Concerns\HasClinicalProfiles;
+use App\Services\Authorization\PermissionGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use InvalidArgumentException;
 
@@ -19,15 +22,15 @@ class AppointmentPolicy
 {
     use HandlesAuthorization, HasClinicalProfiles;
 
-    /**
-     * The roles authorized to view generic index matrices of appointments.
-     */
-    private const ALLOWED_VIEW_ANY_ROLES = ['doctor', 'patient', 'receptionist'];
+    public function __construct(
+        private readonly PermissionGate $gate,
+    ) {}
+
 
     /**
      * The roles authorized to initiate and instantiate appointment records.
      */
-    private const ALLOWED_CREATE_ROLES = ['patient', 'receptionist'];
+    private const ALLOWED_CREATE_ROLES = [UserRole::Patient->value, UserRole::Receptionist->value];
 
     /**
      * Determine whether the user can view any clinical appointments ledger.
@@ -37,19 +40,7 @@ class AppointmentPolicy
      */
     public function viewAny(User $user): bool
     {
-        // $user->hasPermissionTo(users)
-        return in_array($user->role, self::ALLOWED_VIEW_ANY_ROLES, true);
-    }
-
-    /**
-     * Determine whether the user can create new clinic appointments.
-     *
-     * @param  \App\Models\User  $user
-     * @return bool
-     */
-    public function create(User $user): bool
-    {
-        return in_array($user->role, self::ALLOWED_CREATE_ROLES, true);
+        return $this->gate->allows($user, UserRole::values(), AppointmentPermission::ViewAny);
     }
 
     /**
@@ -62,7 +53,19 @@ class AppointmentPolicy
      */
     public function view(User $user, Appointment $appointment): bool
     {
-        return $this->delegateToStrategy($user, $appointment);
+        return $this->gate->allows($user, UserRole::values(), AppointmentPermission::View)
+            && $this->delegateToStrategy($user, $appointment);
+    }
+
+    /**
+     * Determine whether the user can create new clinic appointments.
+     *
+     * @param  \App\Models\User  $user
+     * @return bool
+     */
+    public function create(User $user): bool
+    {
+        return $this->gate->allows($user, self::ALLOWED_CREATE_ROLES, AppointmentPermission::Create);
     }
 
     /**
@@ -74,7 +77,8 @@ class AppointmentPolicy
      */
     public function update(User $user, Appointment $appointment): bool
     {
-        return $this->delegateToStrategy($user, $appointment);
+        return $this->gate->allows($user, self::ALLOWED_CREATE_ROLES, AppointmentPermission::Update)
+            && $this->delegateToStrategy($user, $appointment);
     }
 
     /**
@@ -86,7 +90,7 @@ class AppointmentPolicy
      */
     public function delete(User $user, Appointment $appointment): bool
     {
-        return $this->delegateToStrategy($user, $appointment);
+        return $this->gate->allows($user, UserRole::staffRoleValues(), AppointmentPermission::Delete);
     }
 
     /**

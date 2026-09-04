@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies\DentalRecord;
 
+use App\Enums\Permissions\DentalRecordPermission;
 use App\Enums\UserRole;
 use App\Factories\Authorization\DentalRecordAuthorizationFactory;
 use App\Models\DentalRecord;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Policies\Concerns\HasClinicalProfiles;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use InvalidArgumentException;
+use App\Services\Authorization\PermissionGate;
 
 /**
  * Class DentalRecordPolicy
@@ -21,10 +23,16 @@ class DentalRecordPolicy
 {
     use HandlesAuthorization, HasClinicalProfiles;
 
+    public function __construct(
+        private readonly PermissionGate $gate,
+    ) {}
+
     /**
      * Roles permitted to access structural indexes of corporate dental history.
      */
-    private const ALLOWED_VIEW_ANY_ROLES = [UserRole::Doctor->value, UserRole::Patient->value];
+    private const ALLOWED_CREATE_ROLES = [UserRole::Doctor->value];
+    private const ALLOWED_UPDATE_ROLES = [UserRole::Doctor->value, UserRole::Admin->value];
+    private const ALLOWED_FORCE_DELETE_ROLES = [UserRole::Admin->value];
 
     /**
      * Determine whether the user can browse index arrays of medical records.
@@ -34,7 +42,7 @@ class DentalRecordPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(self::ALLOWED_VIEW_ANY_ROLES);
+        return $this->gate->allows($user, UserRole::values(), DentalRecordPermission::ViewAny);
     }
 
     /**
@@ -48,7 +56,8 @@ class DentalRecordPolicy
      */
     public function view(User $user, DentalRecord $dentalRecord, Appointment $appointment): bool
     {
-        return $this->delegateToStrategy($user, $dentalRecord, $appointment);
+        return $this->gate->allows($user, UserRole::values(), DentalRecordPermission::View)
+            && $this->delegateToStrategy($user, $dentalRecord, $appointment);
     }
 
     /**
@@ -59,7 +68,7 @@ class DentalRecordPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole(UserRole::Doctor->value);
+        return $this->gate->allows($user, self::ALLOWED_CREATE_ROLES, DentalRecordPermission::Create);
     }
 
     /**
@@ -72,7 +81,8 @@ class DentalRecordPolicy
      */
     public function update(User $user, DentalRecord $dentalRecord, Appointment $appointment): bool
     {
-        return $this->delegateToStrategy($user, $dentalRecord, $appointment);
+        return $this->gate->allows($user, self::ALLOWED_UPDATE_ROLES, DentalRecordPermission::Update)
+            && $this->delegateToStrategy($user, $dentalRecord, $appointment);
     }
 
     /**
@@ -85,7 +95,8 @@ class DentalRecordPolicy
      */
     public function delete(User $user, DentalRecord $dentalRecord, Appointment $appointment): bool
     {
-        return $this->delegateToStrategy($user, $dentalRecord, $appointment);
+        return $this->gate->allows($user, UserRole::staffRoleValues(), DentalRecordPermission::Delete)
+            && $this->delegateToStrategy($user, $dentalRecord, $appointment);
     }
 
     /**
@@ -98,7 +109,8 @@ class DentalRecordPolicy
      */
     public function restore(User $user, DentalRecord $dentalRecord, Appointment $appointment): bool
     {
-        return $this->delegateToStrategy($user, $dentalRecord, $appointment);
+        return $this->gate->allows($user, UserRole::staffRoleValues(), DentalRecordPermission::Restore)
+            && $this->delegateToStrategy($user, $dentalRecord, $appointment);
     }
 
     /**
@@ -111,7 +123,8 @@ class DentalRecordPolicy
      */
     public function forceDelete(User $user, DentalRecord $dentalRecord, Appointment $appointment): bool
     {
-        return $this->delegateToStrategy($user, $dentalRecord, $appointment);
+        return $this->gate->allows($user, self::ALLOWED_FORCE_DELETE_ROLES, DentalRecordPermission::ForceDelete)
+            && $this->delegateToStrategy($user, $dentalRecord, $appointment);
     }
 
     /**

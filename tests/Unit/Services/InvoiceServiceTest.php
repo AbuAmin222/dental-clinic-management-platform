@@ -71,13 +71,13 @@ class InvoiceServiceTest extends TestCase
             'invoice_id' => $invoice->id,
             'item_name' => 'Service',
             'quantity' => 2,
-            'unit_price' => 5000,
+            'unit_price' => 50.0,
         ]);
 
         $invoice->recalculateTotals();
 
         $invoice = $invoice->fresh();
-        $this->assertSame(10000, $invoice->getRawOriginal('sub_total'));
+        $this->assertSame(10000, (int) $invoice->getRawOriginal('sub_total'));
     }
 
     #[Test]
@@ -92,7 +92,7 @@ class InvoiceServiceTest extends TestCase
                 [
                     'item_name' => 'Cleaning',
                     'quantity' => 1,
-                    'unit_price' => 10000,
+                    'unit_price' => 100.0,
                 ],
             ],
         ], $appointment);
@@ -112,7 +112,7 @@ class InvoiceServiceTest extends TestCase
             'invoice_id' => $invoice->id,
             'item_name' => 'Old Service',
             'quantity' => 1,
-            'unit_price' => 5000,
+            'unit_price' => 50.0,
         ]);
 
         $updated = $this->service->upsertForAppointment([
@@ -122,7 +122,7 @@ class InvoiceServiceTest extends TestCase
                 [
                     'item_name' => 'New Service',
                     'quantity' => 2,
-                    'unit_price' => 3000,
+                    'unit_price' => 30.0,
                 ],
             ],
         ], $appointment);
@@ -141,17 +141,17 @@ class InvoiceServiceTest extends TestCase
             'invoice_id' => $invoice->id,
             'item_name' => 'Service 1',
             'quantity' => 1,
-            'unit_price' => 1000,
+            'unit_price' => 10.0,
         ]);
         $item2 = InvoiceItem::create([
             'invoice_id' => $invoice->id,
             'item_name' => 'Service 2',
             'quantity' => 1,
-            'unit_price' => 2000,
+            'unit_price' => 20.0,
         ]);
 
         $this->service->syncItems($invoice, [
-            ['id' => $item1->id, 'quantity' => 1, 'unit_price' => 1000],
+            ['id' => $item1->id, 'quantity' => 1, 'unit_price' => 10.0],
         ]);
 
         $this->assertDatabaseMissing('invoice_items', ['id' => $item2->id]);
@@ -176,16 +176,25 @@ class InvoiceServiceTest extends TestCase
     public function record_payment_succeeds_when_amount_within_due(): void
     {
         $invoice = Invoice::factory()->create([
-            'total_amount' => 10000,
-            'paid_amount' => 2000,
-            'due_amount' => 8000,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'paid_amount' => 20.0,
             'status' => InvoiceStatus::PartiallyPaid,
         ]);
 
-        $result = $this->service->recordPayment($invoice, 3000);
+        InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'item_name' => 'Service',
+            'quantity' => 1,
+            'unit_price' => 100.0,
+        ]);
+        $invoice->recalculateTotals();
+        $invoice = $invoice->fresh();
+
+        $result = $this->service->recordPayment($invoice, 30.0);
 
         $result = $result->fresh();
-        $this->assertSame(5000, $result->getRawOriginal('paid_amount'));
+        $this->assertSame(50.0, $result->paid_amount);
         $this->assertSame(InvoiceStatus::PartiallyPaid, $result->status);
     }
 
@@ -193,13 +202,22 @@ class InvoiceServiceTest extends TestCase
     public function record_payment_marks_invoice_paid_when_fully_paid(): void
     {
         $invoice = Invoice::factory()->create([
-            'total_amount' => 10000,
-            'paid_amount' => 2000,
-            'due_amount' => 8000,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'paid_amount' => 20.0,
             'status' => InvoiceStatus::PartiallyPaid,
         ]);
 
-        $result = $this->service->recordPayment($invoice, 8000);
+        InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'item_name' => 'Service',
+            'quantity' => 1,
+            'unit_price' => 100.0,
+        ]);
+        $invoice->recalculateTotals();
+        $invoice = $invoice->fresh();
+
+        $result = $this->service->recordPayment($invoice, 80.0);
 
         $result = $result->fresh();
         $this->assertSame(InvoiceStatus::Paid, $result->status);

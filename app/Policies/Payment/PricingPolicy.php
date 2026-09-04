@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Policies\Payment;
 
+use App\Enums\Permissions\PricingPermission;
 use App\Enums\UserRole;
 use App\Factories\Authorization\PricingAuthorizationFactory;
 use App\Models\Pricing;
 use App\Models\User;
 use App\Policies\Concerns\HasClinicalProfiles;
+use App\Services\Authorization\PermissionGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use InvalidArgumentException;
 
@@ -20,10 +22,16 @@ class PricingPolicy
 {
     use HandlesAuthorization, HasClinicalProfiles;
 
+    public function __construct(
+        private readonly PermissionGate $gate,
+    ) {}
+
     /**
      * Roles allowed to inspect clinical procedure catalogs.
      */
     private const ALLOWED_VIEW_ANY_ROLES = [UserRole::Doctor->value, UserRole::Patient->value, UserRole::Receptionist->value];
+    private const ALLOWED_CRUD_ROLES = [UserRole::Doctor->value];
+    private const ALLOWED_SENSITIVE_ACTION_ROLES = [UserRole::Admin->value];
 
     /**
      * Roles allowed read-only access to specific price cards without dynamic check requirements.
@@ -38,7 +46,7 @@ class PricingPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(self::ALLOWED_VIEW_ANY_ROLES);
+        return $this->gate->allows($user, UserRole::values(), PricingPermission::ViewAny);
     }
 
     /**
@@ -50,11 +58,8 @@ class PricingPolicy
      */
     public function view(User $user, Pricing $pricing): bool
     {
-        if ($user->hasRole(UserRole::Doctor->value)) {
-            return $this->delegateToStrategy($user, $pricing);;
-        }
-
-        return $user->hasRole(self::ALLOWED_READ_ONLY_ROLES);
+        return $this->gate->allows($user, UserRole::staffRoleValues(), PricingPermission::View)
+            && $this->delegateToStrategy($user, $pricing);
     }
 
     /**
@@ -65,7 +70,7 @@ class PricingPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole(UserRole::Doctor->value);
+        return $this->gate->allows($user, self::ALLOWED_CRUD_ROLES, PricingPermission::Create);
     }
 
     /**
@@ -77,7 +82,8 @@ class PricingPolicy
      */
     public function update(User $user, Pricing $pricing): bool
     {
-        return $user->hasRole(UserRole::Doctor->value) && $this->delegateToStrategy($user, $pricing);
+        return $this->gate->allows($user, self::ALLOWED_CRUD_ROLES, PricingPermission::View)
+            && $this->delegateToStrategy($user, $pricing);
     }
 
     /**
@@ -89,7 +95,8 @@ class PricingPolicy
      */
     public function delete(User $user, Pricing $pricing): bool
     {
-        return $user->hasRole(UserRole::Doctor->value) && $this->delegateToStrategy($user, $pricing);
+        return $this->gate->allows($user, self::ALLOWED_CRUD_ROLES, PricingPermission::View)
+            && $this->delegateToStrategy($user, $pricing);
     }
 
     /**
@@ -101,7 +108,8 @@ class PricingPolicy
      */
     public function restore(User $user, Pricing $pricing): bool
     {
-        return $user->hasRole(UserRole::Doctor->value) && $this->delegateToStrategy($user, $pricing);
+        return $this->gate->allows($user, self::ALLOWED_SENSITIVE_ACTION_ROLES, PricingPermission::View)
+            && $this->delegateToStrategy($user, $pricing);
     }
 
     /**
@@ -113,7 +121,8 @@ class PricingPolicy
      */
     public function forceDelete(User $user, Pricing $pricing): bool
     {
-        return false;
+        return $this->gate->allows($user, self::ALLOWED_SENSITIVE_ACTION_ROLES, PricingPermission::View)
+            && $this->delegateToStrategy($user, $pricing);
     }
 
     /**

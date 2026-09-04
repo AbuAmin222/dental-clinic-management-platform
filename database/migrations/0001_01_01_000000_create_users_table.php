@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Gender;
+use App\Enums\UserRole;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -38,7 +39,11 @@ return new class extends Migration
             $table->date('date_of_birth');
             $table->string('address')->nullable();
 
+            $table->enum('registration_source', [UserRole::staffRoleValues(), 'self'])->default('self');
+
             $table->boolean('is_active')->default(false);
+            $table->boolean('is_profile_completed')->default(false);
+
             $table->rememberToken();
             $table->foreignId('current_team_id')->nullable();
 

@@ -110,17 +110,27 @@ class InvoiceTest extends TestCase
     public function record_payment_marks_invoice_paid(): void
     {
         $invoice = Invoice::factory()->create([
-            'total_amount' => 100.0,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
             'paid_amount' => 0.0,
-            'due_amount' => 100.0,
             'status' => InvoiceStatus::Pending,
         ]);
+
+        InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'item_name' => 'Service',
+            'quantity' => 1,
+            'unit_price' => 100.0,
+        ]);
+
+        $invoice->recalculateTotals();
+        $invoice = $invoice->fresh();
 
         $invoice->recordPayment(100.0);
 
         $invoice = $invoice->fresh();
         $this->assertSame(InvoiceStatus::Paid, $invoice->status);
-        $this->assertSame(100.00, $invoice->paid_amount);
+        $this->assertSame(100.0, $invoice->paid_amount);
         $this->assertSame(0.0, $invoice->due_amount);
     }
 
@@ -128,11 +138,21 @@ class InvoiceTest extends TestCase
     public function record_payment_marks_partial_payment(): void
     {
         $invoice = Invoice::factory()->create([
-            'total_amount' => 100.0,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
             'paid_amount' => 0.0,
-            'due_amount' => 100.0,
             'status' => InvoiceStatus::Pending,
         ]);
+
+        InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'item_name' => 'Service',
+            'quantity' => 1,
+            'unit_price' => 100.0,
+        ]);
+
+        $invoice->recalculateTotals();
+        $invoice = $invoice->fresh();
 
         $invoice->recordPayment(50.0);
 

@@ -63,7 +63,8 @@ class AppointmentService
     {
         return DB::transaction(function () use ($appointment, $data) {
             if (isset($data['start_time'], $data['appointment_date'])) {
-                if ($this->isOverlapping($data)) {
+                $checkData = array_merge(['doctor_id' => $appointment->doctor_id], $data);
+                if ($this->isOverlapping($checkData)) {
                     throw new BusinessRuleViolationException(
                         __('The time slot is already booked for this doctor.')
                     );
@@ -91,10 +92,11 @@ class AppointmentService
     {
         $startTime = Carbon::parse($data['start_time'])->format('H:i:s');
         $endTime = $this->resolveEndTime($data);
+        $date = Carbon::parse($data['appointment_date'])->format('Y-m-d');
 
         $truthValue = Appointment::where('doctor_id', $data['doctor_id'])
-            ->where('appointment_date', $data['appointment_date'])
-            ->where('status', '!=', AppointmentStatus::Cancelled)
+            ->whereDate('appointment_date', $date)
+            ->where('status', '!=', AppointmentStatus::Cancelled->value)
             ->where(static function ($query) use ($startTime, $endTime): void {
                 $query->where('start_time', '<', $endTime)
                     ->where('end_time', '>', $startTime);

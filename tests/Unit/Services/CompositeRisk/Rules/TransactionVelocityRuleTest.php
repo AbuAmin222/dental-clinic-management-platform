@@ -18,23 +18,36 @@ class TransactionVelocityRuleTest extends TestCase
     use RefreshDatabase;
 
     private Patient $patient;
+    private \App\Models\Doctor $doctor;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->doctor = \App\Models\Doctor::factory()->create();
         $this->patient = Patient::factory()->create();
     }
 
     private function createTransactionForPatient(?int $minutesAgo = null): PaymentTransaction
     {
-        $invoice = Invoice::factory()->create(['patient_id' => $this->patient->id]);
+        $invoice = Invoice::create([
+            'doctor_id' => $this->doctor->id,
+            'patient_id' => $this->patient->id,
+            'sub_total' => 100.0,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'total_amount' => 100.0,
+            'paid_amount' => 0.0,
+            'due_amount' => 100.0,
+            'status' => \App\Enums\InvoiceStatus::Pending,
+            'due_date' => '2025-12-31',
+        ]);
         $time = $minutesAgo !== null ? Carbon::now()->subMinutes($minutesAgo) : Carbon::now();
 
         return PaymentTransaction::create([
             'invoice_id' => $invoice->id,
             'transaction_reference' => 'REF-' . uniqid(),
             'payment_method' => 'paypal',
-            'amount' => 10000,
+            'amount' => 100.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);
@@ -80,12 +93,23 @@ class TransactionVelocityRuleTest extends TestCase
     {
         $rule = new TransactionVelocityRule(lookbackMinutes: 15, attemptThreshold: 4, points: 35);
 
-        $invoice = Invoice::factory()->create(['patient_id' => null]);
+        $invoice = Invoice::create([
+            'doctor_id' => $this->doctor->id,
+            'patient_id' => null,
+            'sub_total' => 100.0,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'total_amount' => 100.0,
+            'paid_amount' => 0.0,
+            'due_amount' => 100.0,
+            'status' => \App\Enums\InvoiceStatus::Paid,
+            'due_date' => '2025-12-31',
+        ]);
         $transaction = PaymentTransaction::create([
             'invoice_id' => $invoice->id,
             'transaction_reference' => 'REF-123',
             'payment_method' => 'paypal',
-            'amount' => 10000,
+            'amount' => 100.0,
             'currency' => 'ILS',
             'status' => 'completed',
         ]);
